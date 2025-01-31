@@ -1,4 +1,4 @@
-import BaseService from "./baseService.js";
+import BaseService from "../utils/baseService.js";
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import createTokens from "../utils/jwtUtils.js";
@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import Redis from "ioredis";
 import dotenv from "dotenv";
 import sendEmail from "../utils/email.js";
+import ErrorHandler from "../utils/errorHandler.js";
 
 dotenv.config();
 const redis = new Redis(process.env.REDIS_URL);
@@ -20,12 +21,12 @@ class AuthService extends BaseService {
     const { name, email, password } = data;
 
     if (!name || !email || !password) {
-      throw new Error("Please fill all fields.");
+      throw new ErrorHandler(400, "Please fill all fields.");
     }
 
     const userExist = await this.model.findOne({ email });
     if (userExist) {
-      throw new Error("User already exists.");
+      throw new ErrorHandler(400, "User already exists.");
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -70,24 +71,23 @@ class AuthService extends BaseService {
   }
 
   // login
-
   async login(data, res) {
     const { email, password } = data;
 
     if (!email || !password) {
-      throw new Error("Please fill all fields.");
+      throw new ErrorHandler(400, "Please fill all fields.");
     }
 
     const user = await this.model.findOne({ email });
 
     if (!user) {
-      throw new Error("User not found.");
+      throw new ErrorHandler(404, "User not found.");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      throw new Error("Invalid credentials.");
+      throw new ErrorHandler(401, "Invalid credentials.");
     }
 
     const { accessToken, refreshToken } = createTokens(res, user._id);
@@ -124,8 +124,15 @@ class AuthService extends BaseService {
   // logout
   async logout(refreshToken) {
     if (refreshToken) {
-      const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-      await redis.del(`refreshToken:${decode.userId}`);
+      try {
+        const decode = jwt.verify(
+          refreshToken,
+          process.env.REFRESH_TOKEN_SECRET
+        );
+        await redis.del(`refreshToken:${decode.userId}`);
+      } catch (error) {
+        throw new ErrorHandler(400, "Invalid refresh token.");
+      }
     }
 
     return { message: "Logout success" };
@@ -133,24 +140,28 @@ class AuthService extends BaseService {
 
   // refresh token
   async refreshToken(refreshToken, res) {
-    const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    try {
+      const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    const storedToken = await redis.get(`refreshToken:${decode.userId}`);
+      const storedToken = await redis.get(`refreshToken:${decode.userId}`);
 
-    if (storedToken !== refreshToken) {
-      throw new Error("Invalid refresh token.");
+      if (storedToken !== refreshToken) {
+        throw new ErrorHandler(400, "Invalid refresh token.");
+      }
+
+      const { accessToken } = createTokens(res, decode.userId);
+
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      return { accessToken };
+    } catch (error) {
+      throw new ErrorHandler(400, "Invalid refresh token.");
     }
-
-    const { accessToken } = createTokens(res, decode.userId);
-
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    return { accessToken };
   }
 
   // forgot password
@@ -158,7 +169,7 @@ class AuthService extends BaseService {
     const user = await this.model.findOne({ email });
 
     if (!user) {
-      throw new Error("User not found.");
+      throw new ErrorHandler(404, "User not found.");
     }
 
     const otp = user.generateOtp();
@@ -177,14 +188,12 @@ class AuthService extends BaseService {
   async verifyOtp(email, otp) {
     const user = await this.model.findOne({ email });
 
-    console.log(user);
-
     if (!user) {
-      throw new Error("User not found.");
+      throw new ErrorHandler(404, "User not found.");
     }
 
     if (!user.verifyOtp(otp)) {
-      throw new Error("Invalid or expired OTP");
+      throw new ErrorHandler(400, "Invalid or expired OTP");
     }
 
     return { message: "OTP verified" };
@@ -192,15 +201,14 @@ class AuthService extends BaseService {
 
   // reset password
   async resetPassword(email, otp, newPassword) {
-
     const user = await this.model.findOne({ email });
 
     if (!user) {
-      throw new Error("User not found.");
+      throw new ErrorHandler(404, "User not found.");
     }
 
     if (!user.verifyOtp(otp)) {
-      throw new Error("Invalid or expired OTP");
+      throw new ErrorHandler(400, "Invalid or expired OTP");
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -218,7 +226,7 @@ class AuthService extends BaseService {
     const user = await this.model.findOne({ email });
 
     if (!user) {
-      throw new Error("User not found.");
+      throw new ErrorHandler(404, "User not found.");
     }
 
     const otp = user.generateOtp();
@@ -233,4 +241,5 @@ class AuthService extends BaseService {
     return { message: "OTP sent to your email" };
   }
 }
+
 export default new AuthService(User);

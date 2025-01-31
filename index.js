@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import errorMiddleware from "./middlewares/errorMiddleware.js";
 
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -20,3 +21,5 @@ app.use("/api/v1/auth", authRoutes);
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+app.use(errorMiddleware);
