@@ -12,7 +12,7 @@ import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import quizRoute from './routes/quizRoutes.js'
-
+import saveCourseRoute from './routes/saveCourseRoutes.js'
 dotenv.config();
 const port = process.env.PORT || 5000;
 connectDB();
@@ -61,7 +61,9 @@ app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
-app.use("/api/v1/quiz", quizRoute)
+app.use("/api/v1/quiz", quizRoute);
+app.use("/api/v1/saveCourses", saveCourseRoute);
+
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
