@@ -1,3 +1,4 @@
+
 import Joi from "joi";
 
 //validate register

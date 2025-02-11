@@ -6,10 +6,11 @@ import { Server } from "socket.io";
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
+import errorMiddleware from "./middlewares/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
-import notificationRoutes from "./routes/notificationRoutes.js";  
-import errorMiddleware from "./middlewares/errorMiddleware.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import quizRoute from './routes/quizRoutes.js'
 
 dotenv.config();
@@ -24,7 +25,7 @@ const io = new Server(server, {
   },
 });
 
-const onlineUsers = new Map();  
+const onlineUsers = new Map();
 
 io.on("connection", (socket) => {
   socket.on("online", (user) => {
@@ -56,10 +57,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/orders", orderRoutes);
-app.use("/api/v1/notifications", notificationRoutes);  
-app.use("/api/v1/quiz",quizRoute)
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/quiz", quizRoute)
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
