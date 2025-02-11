@@ -35,13 +35,13 @@ const sendEmail = async (options) => {
         </body>
     </html>
 `,
-    attachments: [
-      {
-        filename: "Logo_infinity.png",
-        path: "c:/Users/USER/Desktop/capstone projectI/E-learning_web_backend/assets/Logo_infinity.png",
-        cid: "logo",
-      },
-    ],
+    // attachments: [
+    //   {
+    //     filename: "Logo_infinity.png",
+    //     path: "D:\CADT(Y3)\term-2\Capstone 1\Development\Infinity-Learn\assets\Logo_infinity.png",
+    //     cid: "logo",
+    //   },
+    // ],
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
