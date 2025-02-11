@@ -10,6 +10,7 @@ import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";  
 import errorMiddleware from "./middlewares/errorMiddleware.js";
+import quizRoute from './routes/quizRoutes.js'
 
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -58,6 +59,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/notifications", notificationRoutes);  
+app.use("/api/v1/quiz",quizRoute)
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
