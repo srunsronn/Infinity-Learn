@@ -1,33 +1,5 @@
 import mongoose from "mongoose";
-
-const ReviewSchema = mongoose.Schema(
-    {
-        user: {
-            type: mongoose.Schema.Types.ObjectId,
-            required: true,
-            ref: "User",
-        },
-        comment: {
-            type: String,
-        },
-        rating: {
-            type: Number,
-            default: 0,
-        },
-    }
-);
-
-const commentSchema = mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        ref: "User",
-    },
-    comment: {
-        type: String,
-    },
-    commentReplies: [Object]
-});
+import User from "../models/userModel.js"; // User schema import for reference
 
 const courseDataSchema = mongoose.Schema({
     title: {
@@ -36,7 +8,7 @@ const courseDataSchema = mongoose.Schema({
     },
     description: {
         type: String,
-        require: true,
+        required: true,
     },
     videoThumnail: {
         type: String,
@@ -44,17 +16,15 @@ const courseDataSchema = mongoose.Schema({
     },
     videoLink: {
         type: String,
-        require: true,
+        required: true,
     },
     videoSection: {
         type: String,
     },
     videoLength: {
         type: Number,
-        require: true,
-    },
-    questions: [commentSchema]
-
+        required: true,
+    }
 });
 
 const courseSchema = mongoose.Schema(
@@ -81,20 +51,19 @@ const courseSchema = mongoose.Schema(
         },
         tags: {
             type: String,
-            require: true,
+            required: true,
         },
         level: {
             type: String,
-            require: true,
+            required: true,
         },
-        instructor:{
+        instructor: {
             type: mongoose.Schema.Types.ObjectId,
-            require: true,
-            ref: "User"
+            required: true,
+            ref: User, // Reference to the instructor (user)
         },
         benefits: [{ title: String }],
-        reviews: [ReviewSchema],
-        courseData: [courseDataSchema]
+        courseData: [courseDataSchema], // Array of course data without comments
     },
     { timestamps: true }
 );

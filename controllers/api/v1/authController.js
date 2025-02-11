@@ -1,4 +1,3 @@
-import e from "express";
 import asyncHandler from "../../../middlewares/asyncHandler.js";
 import AuthService from "../../../services/authService.js";
 
