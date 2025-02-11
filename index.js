@@ -14,6 +14,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import quizRoute from './routes/quizRoutes.js'
 import saveCourseRoute from './routes/saveCourseRoutes.js'
 import uploadFileRoute from './routes/uploadRoutes.js'
+import questionRoute from './routes/questionRoutes.js'
+
 dotenv.config();
 const port = process.env.PORT || 5000;
 connectDB();
@@ -66,6 +68,8 @@ app.use("/api/v1/quiz", quizRoute);
 app.use("/api/v1/saveCourses", saveCourseRoute);
 app.use("/api/v1/upload",uploadFileRoute);
 
+app.use("/api/v1/quiz",quizRoute);
+app.use("/api/v1/question",questionRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);

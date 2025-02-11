@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import BaseService from '../utils/baseService.js';
 import Quiz from "../models/quizModel.js";
 import ErrorHandler from '../utils/errorHandler.js';
+import Question from "../models/questionModel.js";
 
 dotenv.config();
 const redis = new Redis(process.env.REDIS_URL);
@@ -45,15 +46,41 @@ class QuizService extends BaseService{
 
     }
 
-    //update quiz
+    // get all active quiz
 
-    // async update(id,data){
-        
-    // }
+    async getAllActiveQuiz(){
+        return await this.findAll({is_active:true});
+    }
+
+    //update quiz stautus (activate,disactivate)
+
+    async updateQuizStatus(id){
+        try {
+            const quiz = await this.findById(id);
+            if(!quiz){
+                return new ErrorHandler(404, "quiz not found");
+            }
+            const updateStatus = await this.update(id,{is_active:!quiz.is_active});
+            return { message: "Quiz stautus update successfully",quiz:updateStatus};
+        } catch (err){
+            throw new ErrorHandler(500,err.message)
+        }
+    }
 
     // delete quiz
     async deleteQuiz(id){
-        return await this.delete(id);
+        try{
+            const deleteQuiz =  await this.delete(id);
+        if(!deleteQuiz){
+            throw new ErrorHandler(404,'Quiz not Found')
+        }
+        await Question.deleteMany({quiz_id:id});
+        return {message: 'Quiz and all related question are deleted'}
+        } catch(err){
+            throw new ErrorHandler(500,err.message)
+        }
+        
+
     }
 }
 
