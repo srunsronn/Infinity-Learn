@@ -36,16 +36,37 @@ class BaseService {
     }
   }
 
+  // Find by user Id
+  async findByUserId(userId) {
+    try {
+      const records = await this.model.find({ userId });
+      if (!records.length) {
+        throw new ErrorHandler(404, "No records found for this user");
+      }
+      return records;
+    } catch (err) {
+      throw new ErrorHandler(500, err.message);
+    }
+  }
+
   // Update
   async update(id, data) {
     try {
-      const updatedRecord = await this.model.findByIdAndUpdate(id, data, {
-        new: true,
-        runValidators: true,
-      });
-      if (!updatedRecord) {
+      
+      const currentRecord = await this.model.findById(id);
+      if (!currentRecord) {
         throw new ErrorHandler(404, "Record not found");
       }
+
+      for (let key in data) {
+        if (data[key] && typeof data[key] === "object" && currentRecord[key]) {
+          currentRecord[key] = { ...currentRecord[key], ...data[key] };
+        } else {
+          currentRecord[key] = data[key];
+        }
+      }
+
+      const updatedRecord = await currentRecord.save();
       return updatedRecord;
     } catch (err) {
       throw new ErrorHandler(500, err.message);
