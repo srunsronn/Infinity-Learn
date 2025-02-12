@@ -11,10 +11,10 @@ import errorMiddleware from "./middlewares/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import quizRoute from './routes/quizRoutes.js'
-import saveCourseRoute from './routes/saveCourseRoutes.js'
-import uploadFileRoute from './routes/uploadRoutes.js'
-import questionRoute from './routes/questionRoutes.js'
+import quizRoute from "./routes/quizRoutes.js";
+import saveCourseRoute from "./routes/saveCourseRoutes.js";
+import uploadFileRoute from "./routes/uploadRoutes.js";
+import questionRoute from "./routes/questionRoutes.js";
 
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -59,6 +59,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.send("Backend is running...");
+});
+
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/users", userRoutes);
@@ -66,10 +70,10 @@ app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/quiz", quizRoute);
 app.use("/api/v1/saveCourses", saveCourseRoute);
-app.use("/api/v1/upload",uploadFileRoute);
+app.use("/api/v1/upload", uploadFileRoute);
 
-app.use("/api/v1/quiz",quizRoute);
-app.use("/api/v1/question",questionRoute);
+app.use("/api/v1/quiz", quizRoute);
+app.use("/api/v1/question", questionRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
