@@ -7,9 +7,9 @@ const getAllSaveCourse = asyncHandler(async (req, res) => {
 });
 
 const saveCourse = asyncHandler(async (req, res) => {
-    const { user, course } = req.body;
-    console.log(user, course);
-    const result = await saveCourseService.saveCourseToggle(user, course);
+    const { userID, courseID } = req.body;
+    console.log(userID, courseID);
+    const result = await saveCourseService.saveCourseToggle(userID, courseID);
     res.status(200).json({ message: "Save course successfully", result });
 });
 
