@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import cors from "cors";
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -16,6 +17,11 @@ import saveCourseRoute from './routes/saveCourseRoutes.js'
 import uploadFileRoute from './routes/uploadRoutes.js'
 import questionRoute from './routes/questionRoutes.js'
 import enrolledCourseRoute from './routes/enrolledCourseRoute.js'
+import quizRoute from "./routes/quizRoutes.js";
+import saveCourseRoute from "./routes/saveCourseRoutes.js";
+import uploadFileRoute from "./routes/uploadRoutes.js";
+import questionRoute from "./routes/questionRoutes.js";
+
 dotenv.config();
 const port = process.env.PORT || 5000;
 connectDB();
@@ -27,6 +33,14 @@ const io = new Server(server, {
     origin: "*",
   },
 });
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Replace with your frontend's origin
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+  })
+);
 
 const onlineUsers = new Map();
 
@@ -58,6 +72,10 @@ io.on("connection", (socket) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.get("/", (req, res) => {
+  res.send("Backend is running...");
+});
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
