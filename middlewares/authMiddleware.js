@@ -3,23 +3,22 @@ import User from "../models/userModel.js";
 
 const authenticate = async (req, res, next) => {
   try {
-    const token =
-      req.cookies.accessToken || req.headers.authorization?.split(" ")[1];
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(401)
-        .json({ message: "No token provided. Not authorized." });
+        .json({ message: "No token provided. Unauthorized!" });
     }
 
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const token = authHeader.split(" ")[1];
 
+    // Verify the access token
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     req.user = await User.findById(decoded.userId).select("-password");
 
     if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "User not found. Not authorized." });
+      return res.status(401).json({ message: "User not found. Unauthorized!" });
     }
 
     next();

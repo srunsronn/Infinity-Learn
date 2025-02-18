@@ -48,13 +48,6 @@ class AuthService extends BaseService {
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
     await redis.set(
       `refreshToken:${newUser._id}`,
       refreshToken,
@@ -62,11 +55,17 @@ class AuthService extends BaseService {
       60 * 60 * 24 * 30
     );
 
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
+    });
+
     return {
       message: "Registration successful",
       user: newUser,
       accessToken,
-      refreshToken,
     };
   }
 
@@ -99,13 +98,6 @@ class AuthService extends BaseService {
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
     await redis.set(
       `refreshToken:${user._id}`,
       refreshToken,
@@ -113,27 +105,28 @@ class AuthService extends BaseService {
       60 * 60 * 24 * 30
     );
 
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
+    });
+
     return {
       message: "Login success",
       user: user,
       accessToken,
-      refreshToken,
     };
   }
 
   // logout
-  async logout(refreshToken) {
-    if (refreshToken) {
-      try {
-        const decode = jwt.verify(
-          refreshToken,
-          process.env.REFRESH_TOKEN_SECRET
-        );
-        await redis.del(`refreshToken:${decode.userId}`);
-      } catch (error) {
-        throw new ErrorHandler(400, "Invalid refresh token.");
-      }
+  async logout(userId, res) {
+    if (userId) {
+      await redis.del(`refreshToken:${userId}`);
     }
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
 
     return { message: "Logout success" };
   }
@@ -141,21 +134,43 @@ class AuthService extends BaseService {
   // refresh token
   async refreshToken(refreshToken, res) {
     try {
-      const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-      const storedToken = await redis.get(`refreshToken:${decode.userId}`);
-
-      if (storedToken !== refreshToken) {
-        throw new ErrorHandler(400, "Invalid refresh token.");
+      if (!refreshToken) {
+        throw new ErrorHandler(400, "Refresh token required.");
       }
 
-      const { accessToken } = createTokens(res, decode.userId);
+      const decode = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+      const storedToken = await redis.get(`refreshToken:${decode.userId}`);
+
+      if (!storedToken || storedToken !== refreshToken) {
+        throw new ErrorHandler(400, "Invalid or expired refresh token.");
+      }
+
+      // Generate a new access token
+      const { accessToken, refreshToken: newRefreshToken } = createTokens(
+        res,
+        decode.userId
+      );
+
+      // Update refresh token in Redis
+      await redis.set(
+        `refreshToken:${decode.userId}`,
+        newRefreshToken,
+        "EX",
+        60 * 60 * 24 * 30
+      );
 
       res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
       });
 
       return { accessToken };
