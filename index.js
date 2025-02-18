@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
+import cors from "cors";
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -11,6 +12,11 @@ import errorMiddleware from "./middlewares/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import quizRoute from './routes/quizRoutes.js'
+import saveCourseRoute from './routes/saveCourseRoutes.js'
+import uploadFileRoute from './routes/uploadRoutes.js'
+import questionRoute from './routes/questionRoutes.js'
+import enrolledCourseRoute from './routes/enrolledCourseRoute.js'
 import quizRoute from "./routes/quizRoutes.js";
 import saveCourseRoute from "./routes/saveCourseRoutes.js";
 import uploadFileRoute from "./routes/uploadRoutes.js";
@@ -28,6 +34,14 @@ const io = new Server(server, {
     origin: "*",
   },
 });
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Replace with your frontend's origin
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+  })
+);
 
 const onlineUsers = new Map();
 
@@ -76,6 +90,7 @@ app.use("/api/v1/upload", uploadFileRoute);
 
 app.use("/api/v1/quiz", quizRoute);
 app.use("/api/v1/question", questionRoute);
+app.use("/api/v1/enroll", enrolledCourseRoute);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
