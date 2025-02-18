@@ -12,15 +12,11 @@ import errorMiddleware from "./middlewares/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import quizRoute from './routes/quizRoutes.js'
-import saveCourseRoute from './routes/saveCourseRoutes.js'
-import uploadFileRoute from './routes/uploadRoutes.js'
-import questionRoute from './routes/questionRoutes.js'
-import enrolledCourseRoute from './routes/enrolledCourseRoute.js'
 import quizRoute from "./routes/quizRoutes.js";
 import saveCourseRoute from "./routes/saveCourseRoutes.js";
 import uploadFileRoute from "./routes/uploadRoutes.js";
 import questionRoute from "./routes/questionRoutes.js";
+import enrolledCourseRoute from "./routes/enrolledCourseRoute.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
 
 dotenv.config();
