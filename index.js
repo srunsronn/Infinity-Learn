@@ -15,6 +15,7 @@ import quizRoute from "./routes/quizRoutes.js";
 import saveCourseRoute from "./routes/saveCourseRoutes.js";
 import uploadFileRoute from "./routes/uploadRoutes.js";
 import questionRoute from "./routes/questionRoutes.js";
+import feedbackRoutes from "./routes/feedbackRoutes.js";
 
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -69,6 +70,7 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/quiz", quizRoute);
+app.use("/api/v1/feedback", feedbackRoutes);
 app.use("/api/v1/saveCourses", saveCourseRoute);
 app.use("/api/v1/upload", uploadFileRoute);
 
