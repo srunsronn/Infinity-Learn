@@ -21,6 +21,10 @@ const userSchema = mongoose.Schema(
       enum: ["student", "teacher", "admin"],
       default: "student",
     },
+    avatar: {
+      type: String,
+      default: "",
+    },
     otp: {
       type: String,
       default: "",
@@ -33,12 +37,16 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    googleId: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
 
 userSchema.methods.generateOtp = function () {
-  const otp = crypto.randomBytes(3).toString("hex");
+  const otp = crypto.randomInt(100000, 999999).toString();
   this.otp = otp;
 
   this.otpExpiresAt = Date.now() + 10 * 60 * 1000;

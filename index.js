@@ -4,6 +4,10 @@ import cookieParser from "cookie-parser";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
+import passport from "passport";
+import session from "express-session";
+import GoogleStrategy from "passport-google-oauth20";
+
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -12,15 +16,11 @@ import errorMiddleware from "./middlewares/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
-import quizRoute from './routes/quizRoutes.js'
-import saveCourseRoute from './routes/saveCourseRoutes.js'
-import uploadFileRoute from './routes/uploadRoutes.js'
-import questionRoute from './routes/questionRoutes.js'
-import enrolledCourseRoute from './routes/enrolledCourseRoute.js'
 import quizRoute from "./routes/quizRoutes.js";
 import saveCourseRoute from "./routes/saveCourseRoutes.js";
 import uploadFileRoute from "./routes/uploadRoutes.js";
 import questionRoute from "./routes/questionRoutes.js";
+import enrolledCourseRoute from "./routes/enrolledCourseRoute.js";
 
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -30,17 +30,31 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:5173", // Replace with your frontend's origin
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
 app.use(
   cors({
-    origin: "http://localhost:5174", // Replace with your frontend's origin
+    origin: "http://localhost:5173", // Allow all domains
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
     credentials: true,
   })
 );
+
+app.use(
+  session({
+    secret: "secret",
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 const onlineUsers = new Map();
 

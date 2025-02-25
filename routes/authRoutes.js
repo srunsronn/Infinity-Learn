@@ -8,9 +8,11 @@ import {
   verifyOtp,
   resetPassword,
   resendOtp,
+  googleLogin,
 } from "../controllers/api/v1/authController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import verifyRole from "../middlewares/roleMiddleware.js";
+import passport from "passport";
 
 const router = express.Router();
 router.route("/register").post(register);
@@ -21,6 +23,26 @@ router.route("/forgot-password").post(forgotPassword);
 router.route("/verify-otp").post(verifyOtp);
 router.route("/reset-password").post(resetPassword);
 router.route("/resend-otp").post(resendOtp);
+
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:5173/login",
+  }),
+  (req, res) => {
+    if (!req.user) {
+      console.log("Google authentication failed");
+      return res.redirect("http://localhost:5173/login");
+    }
+    console.log("User authenticated:", req.user);
+    res.redirect("http://localhost:5173");
+  }
+);
 
 //protect routes
 router.route("/admin").get(authenticate, verifyRole("admin"), (req, res) => {

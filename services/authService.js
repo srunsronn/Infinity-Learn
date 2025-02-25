@@ -7,6 +7,19 @@ import Redis from "ioredis";
 import dotenv from "dotenv";
 import sendEmail from "../utils/email.js";
 import ErrorHandler from "../utils/errorHandler.js";
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const verifyGoogleToken = async (token) => {
+  const ticket = await client.verifyIdToken({
+    idToken: token,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  return payload;
+};
 
 dotenv.config();
 const redis = new Redis(process.env.REDIS_URL);
@@ -254,6 +267,39 @@ class AuthService extends BaseService {
     });
 
     return { message: "OTP sent to your email" };
+  }
+
+  async googleLogin(token, res) {
+    const payload = await verifyGoogleToken(token);
+    const { email, name } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({ email, name, isVerified: true });
+      await user.save();
+    }
+
+    // Generate a JWT token for the user
+    const jwtToken = this.generateJwtToken(user);
+
+    return { token: jwtToken, user };
+  }
+
+  generateJwtToken(user) {
+    // Implement your JWT token generation logic here
+    const accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+    const refreshToken = jwt.sign(
+      { userId: user._id },
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "30d",
+      }
+    );
+
+    return { accessToken, refreshToken };
   }
 }
 

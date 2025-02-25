@@ -62,6 +62,12 @@ const resendOtp = asyncHandler(async (req, res) => {
   res.status(200).json(result);
 });
 
+const googleLogin = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  const result = await AuthService.googleLogin(token, res);
+  res.status(200).json(result);
+});
+
 export {
   register,
   login,
@@ -71,4 +77,5 @@ export {
   verifyOtp,
   resetPassword,
   resendOtp,
+  googleLogin,
 };

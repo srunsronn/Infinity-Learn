@@ -1,3 +1,4 @@
+import { text } from "express";
 import nodemailer from "nodemailer";
 
 const sendEmail = async (options) => {
@@ -16,6 +17,7 @@ const sendEmail = async (options) => {
     from: `"Infinity Learn 👻" <${process.env.USER_GMAIL}>`,
     to: options.email,
     subject: options.subject,
+    text: `Hello from Infinity Learn 👋\n\n${options.message}\n\nBest regards,\nThe Infinity Learn Team`,
     html: `
     <html>
         <body style="font-family: Arial, sans-serif; background-color: #f4f7fc;">
