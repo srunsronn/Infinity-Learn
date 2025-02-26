@@ -37,7 +37,7 @@ router.get(
   (req, res) => {
     if (!req.user) {
       console.log("Google authentication failed");
-      return res.redirect("http://localhost:5173/login");
+      return res.redirect("http://localhost:5000/api/v1/auth/login");
     }
     console.log("User authenticated:", req.user);
     res.redirect("http://localhost:5173");
