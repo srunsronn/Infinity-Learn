@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import User from "../models/User.js"; // Adjust path as needed
+import User from "../models/userModel.js"; 
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -10,11 +10,10 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/google/callback", 
+      callbackURL: "http://localhost:5000/api/v1/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        console.log("Google Profile:", profile);
         let user = await User.findOne({ googleId: profile.id });
 
         if (!user) {

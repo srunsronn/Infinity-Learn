@@ -23,6 +23,7 @@ router.route("/forgot-password").post(forgotPassword);
 router.route("/verify-otp").post(verifyOtp);
 router.route("/reset-password").post(resetPassword);
 router.route("/resend-otp").post(resendOtp);
+router.route("/google-login").post(googleLogin);
 
 router.get(
   "/google",
@@ -32,15 +33,15 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:5173/login",
+    failureRedirect: "/login",
   }),
   (req, res) => {
     if (!req.user) {
       console.log("Google authentication failed");
-      return res.redirect("http://localhost:5000/api/v1/auth/login");
+      return res.redirect("/login");
     }
     console.log("User authenticated:", req.user);
-    res.redirect("http://localhost:5173");
+    res.redirect("http://localhost:5173/");
   }
 );
 

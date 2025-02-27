@@ -1,5 +1,6 @@
 import asyncHandler from "../../../middlewares/asyncHandler.js";
 import AuthService from "../../../services/authService.js";
+import { getProfileInfo } from "../../../utils/googleOauth.js";
 
 const register = asyncHandler(async (req, res) => {
   const result = await AuthService.register(req.body, res);
@@ -63,9 +64,16 @@ const resendOtp = asyncHandler(async (req, res) => {
 });
 
 const googleLogin = asyncHandler(async (req, res) => {
-  const { token } = req.body;
-  const result = await AuthService.googleLogin(token, res);
-  res.status(200).json(result);
+  try {
+    const credential = req.body.credential;
+    const profile = await getProfileInfo(credential);
+
+    const result = await AuthService.googleLogin(credential, res);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in Google strategy:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 export {
