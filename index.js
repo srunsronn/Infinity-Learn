@@ -32,7 +32,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Replace with your frontend's origin
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -40,18 +40,22 @@ const io = new Server(server, {
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Allow all domains
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
   })
 );
 
 app.use(
   session({
-    secret: "secret",
+    secret: process.env.SESSION_SECRET || "default_secret",
     resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false },
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax",
+    },
   })
 );
 
@@ -102,17 +106,24 @@ app.use("/api/v1/quiz", quizRoute);
 app.use("/api/v1/feedback", feedbackRoutes);
 app.use("/api/v1/saveCourses", saveCourseRoute);
 app.use("/api/v1/upload", uploadFileRoute);
-
-app.use("/api/v1/quiz", quizRoute);
 app.use("/api/v1/question", questionRoute);
 app.use("/api/v1/enroll", enrolledCourseRoute);
-
 app.use("/api/v1/banners", bannerRoutes);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.use(errorMiddleware);
+
+// Handle unhandled errors
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  process.exit(1);
 });
 
-app.use(errorMiddleware);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
 
 export { onlineUsers };

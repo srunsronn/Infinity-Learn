@@ -14,16 +14,20 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.googleId; // Password required only if not using Google
+      },
     },
     role: {
       type: String,
       enum: ["student", "teacher", "admin"],
       default: "student",
     },
-    avatar: {
+    profile: {
       type: String,
-      default: "",
+      default: function () {
+        return this.googleId ? "" : undefined;
+      },
     },
     otp: {
       type: String,
@@ -35,7 +39,9 @@ const userSchema = mongoose.Schema(
     },
     isVerified: {
       type: Boolean,
-      default: false,
+      default: function () {
+        return this.googleId ? true : false;
+      },
     },
     googleId: {
       type: String,
@@ -48,9 +54,7 @@ const userSchema = mongoose.Schema(
 userSchema.methods.generateOtp = function () {
   const otp = crypto.randomInt(100000, 999999).toString();
   this.otp = otp;
-
   this.otpExpiresAt = Date.now() + 10 * 60 * 1000;
-
   return otp;
 };
 
