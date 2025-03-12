@@ -22,9 +22,9 @@ class AuthService extends BaseService {
 
   // register
   async register(data, res) {
-    const { name, email, password } = data;
+    const { firstName,lastName, email, password } = data;
 
-    if (!name || !email || !password) {
+    if (!firstName || !lastName || !email || !password) {
       throw new ErrorHandler(400, "Please fill all fields.");
     }
 
@@ -37,7 +37,8 @@ class AuthService extends BaseService {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      name,
+      firstName,
+      lastName,
       email,
       password: hashedPassword,
     });
@@ -262,7 +263,7 @@ class AuthService extends BaseService {
 
   async googleLogin(token, res) {
     const payload = await getProfileInfo(token);
-    const { email, name, sub: googleId, picture } = payload;
+    const { email, firstName, lastName, sub: googleId, picture } = payload;
 
     let user = await User.findOne({ email });
 
@@ -270,7 +271,8 @@ class AuthService extends BaseService {
       user = new User({
         googleId,
         email,
-        name,
+        firstName,
+        lastName,
         profile: picture,
         isVerified: true,
       });
