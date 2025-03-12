@@ -2,16 +2,35 @@ import mongoose from "mongoose";
 import User from "./userModel.js";
 import Course from "./courseModel.js"
 const enrolledSchema = new mongoose.Schema({
-    user: {
+    student: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: User,
+        ref: "User",
         required: true
     },
     course: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: Course,
+        ref: "Course",
         required: true
     },
+    enrolledAt: {
+        type: Date,
+        default: Date.now
+    },
+    completedAt: {
+        type: Date
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    },
+    rating: {
+        type: Number,
+        default: 0
+    },
+    feedback: {
+        type: String,
+        default: ""
+    }
 
 }, { timestamps: true });
 

@@ -3,7 +3,11 @@ import crypto from "crypto";
 
 const userSchema = mongoose.Schema(
   {
-    name: {
+    firstName: {
+      type: String,
+      required: true,
+    },
+    lastName: {
       type: String,
       required: true,
     },
@@ -15,7 +19,7 @@ const userSchema = mongoose.Schema(
     password: {
       type: String,
       required: function () {
-        return !this.googleId; // Password required only if not using Google
+        return !this.googleId;
       },
     },
     role: {
@@ -25,9 +29,7 @@ const userSchema = mongoose.Schema(
     },
     profile: {
       type: String,
-      default: function () {
-        return this.googleId ? "" : undefined;
-      },
+      default: "",
     },
     otp: {
       type: String,

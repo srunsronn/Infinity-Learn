@@ -7,6 +7,7 @@ import cors from "cors";
 import passport from "passport";
 import session from "express-session";
 import GoogleStrategy from "passport-google-oauth20";
+import fileUpload from "express-fileupload";
 
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
@@ -61,6 +62,7 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(fileUpload());
 
 const onlineUsers = new Map();
 
