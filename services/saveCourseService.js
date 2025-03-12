@@ -4,6 +4,7 @@ import ErrorHandler from "../utils/errorHandler.js";
 import mongoose from "mongoose";
 import User from "../models/userModel.js";
 import Course from "../models/courseModel.js";
+import path from "path";
 
 class SaveCourseService extends BaseService {
   constructor() {
@@ -59,10 +60,23 @@ class SaveCourseService extends BaseService {
     }
   }
 
-  // Get all saved courses
-  async getAllSaveCourses() {
+  // Get all saved courses for a user
+  async getAllSaveCourses(userID) {
     try {
-      return await this.model.find().populate("user", "name description");
+      if (!mongoose.Types.ObjectId.isValid(userID)) {
+        throw new ErrorHandler(400, "Invalid user ID format");
+      }
+
+      const userExists = await User.findById(userID);
+      if (!userExists) {
+        throw new ErrorHandler(404, "User not found");
+      }
+
+      const savedCourses = await this.model.find({ user: userID }).populate({
+        path: "course",
+        populate: { path: "instructor", select: "name" },
+      });
+      return savedCourses;
     } catch (err) {
       throw new ErrorHandler(500, err.message);
     }
