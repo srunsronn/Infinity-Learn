@@ -23,8 +23,8 @@ const getAllEnrolledCourses = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "User ID is required" });
   }
 
-  console.log("Data user in controller: ", id);
   const result = await enrolledCourseService.getAllEnrolledCourses(id);
+
   res
     .status(200)
     .json({ message: "Retrieved all enrolled courses successfully", result });
