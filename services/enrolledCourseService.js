@@ -43,9 +43,9 @@ class EnrolledService extends BaseService {
       });
       await newEnrollCourse.save();
 
-      courseExists.studentsEnrolled +=1;
+      courseExists.studentsEnrolled += 1;
       await courseExists.save();
-      
+
       return { status: 200, message: "Course enrolled successfully" };
     } catch (err) {
       throw new ErrorHandler(500, err.message);
@@ -65,19 +65,11 @@ class EnrolledService extends BaseService {
 
   async getAllEnrolledCourses(userID) {
     try {
-      const enrolledCourses = await this.model.find({ user: userID }).populate({
-        path: "course",
-        populate: {
-          path: "instructor",
-          select: "name",
-        },
-      });
+      const coursesEnrolled = await this.model
+        .find({ student: userID })
+        .populate("course");
 
-      if (!enrolledCourses || enrolledCourses.length === 0) {
-        return [];
-      }
-
-      return enrolledCourses;
+      return coursesEnrolled;
     } catch (err) {
       throw new ErrorHandler(500, err.message);
     }
@@ -119,18 +111,32 @@ class EnrolledService extends BaseService {
             enrollments: { $sum: 1 },
           },
         },
-        {$sort: {"_id": 1}}
+        { $sort: { _id: 1 } },
       ]);
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       const trendData = months.map((month, index) => {
-        const monthData = monthlyEnrollments.find((data) => data._id === index + 1);
+        const monthData = monthlyEnrollments.find(
+          (data) => data._id === index + 1
+        );
         return {
           month: month,
           enrollments: monthData ? monthData.enrollments : 0,
         };
       });
       return trendData;
-
     } catch (error) {
       throw new ErrorHandler(500, error.message);
     }
