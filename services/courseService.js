@@ -2,6 +2,7 @@ import BaseService from "../utils/baseService.js";
 import Course from "../models/courseModel.js";
 import User from "../models/userModel.js";
 import ErrorHandler from "../utils/errorHandler.js";
+import enrolledCourseService from "./enrolledCourseService.js";
 
 class CourseService extends BaseService {
   constructor(Course) {
@@ -105,6 +106,8 @@ class CourseService extends BaseService {
       throw new ErrorHandler(500, err.message);
     }
   }
+
+ 
 }
 
 export default new CourseService(Course);

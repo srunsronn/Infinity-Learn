@@ -123,7 +123,6 @@ const createCourse = asyncHandler(async (req, res) => {
     })
   );
 
-  // **Save course in DB**
   const course = new Course({
     name,
     description,
@@ -161,19 +160,22 @@ const updateCourse = asyncHandler(async (req, res) => {
 
   // Parse fields correctly
   if (updateData.price) updateData.price = parseFloat(updateData.price);
-  if (updateData.outcomes)
-    updateData.outcomes = JSON.parse(updateData.outcomes);
-  if (updateData.sections) {
+
+  // Check if outcomes is a string and parse it
+  if (updateData.outcomes && typeof updateData.outcomes === "string") {
     try {
-      updateData.sections = JSON.parse(updateData.sections);
+      updateData.outcomes = JSON.parse(updateData.outcomes);
     } catch (error) {
-      console.error("Error parsing sections:", error);
+      console.error("Error parsing outcomes:", error);
+      return res
+        .status(400)
+        .json({ message: "Invalid JSON format for outcomes" });
     }
   }
 
   // Handle course thumbnail upload
   if (req.files && req.files.image) {
-    const imageFile = req.files.image; // Use the image file
+    const imageFile = req.files.image;
     const tempImagePath = path.join(__dirname, "../../../temp", imageFile.name);
     await imageFile.mv(tempImagePath);
 
@@ -239,8 +241,6 @@ const deleteCourse = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Course deleted successfully" });
 });
 
-
-
 export {
   getAllCourses,
   createCourse,
@@ -248,5 +248,4 @@ export {
   updateCourse,
   deleteCourse,
   getCoursesByInstructor,
-  
 };

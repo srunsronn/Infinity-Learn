@@ -141,6 +141,49 @@ class EnrolledService extends BaseService {
       throw new ErrorHandler(500, error.message);
     }
   }
+  async submitRatingEnrolledCourse(courseId, student, rating) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        throw new ErrorHandler(400, "Invalid course ID format");
+      }
+
+      if (rating < 1 || rating > 5) {
+        throw new ErrorHandler(400, "Rating must be between 1 and 5");
+      }
+
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      const enrollment = await EnrolledCourse.findOne({
+        course: courseId,
+        student: student,
+      });
+
+      if (!enrollment) {
+        throw new ErrorHandler(404, "User not enrolled in this course");
+      }
+
+      enrollment.rating = rating;
+      await enrollment.save();
+
+      // Update course average rating
+      const ratings = await EnrolledCourse.find({
+        course: courseId,
+        rating: { $gt: 0 },
+      });
+      const averageRating =
+        ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length;
+
+      course.averageTRating = averageRating;
+      await course.save();
+
+      return { averageRating };
+    } catch (err) {
+      throw new ErrorHandler(500, err.message);
+    }
+  }
 }
 
 export default new EnrolledService(EnrolledCourse);
