@@ -3,7 +3,8 @@ import {
   enrolledCourse,
   getAllEnrolledCourses,
   getCourseEnrollmentsByInstructor,
-  getCourseEnrollmentsMonthly
+  getCourseEnrollmentsMonthly,
+  submitRatingEnrolledCourse
 } from "../controllers/api/v1/enrolledCourseController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import verifyRole from "../middlewares/roleMiddleware.js";
@@ -18,6 +19,8 @@ router.get("/instructor/get-course-enrollments", authenticate, verifyRole("teach
 
 // instructor get enrollment monthly
 router.get("/instructor/get-enrollments-monthly", authenticate, verifyRole("teacher"), getCourseEnrollmentsMonthly);
+
+router.post("/:courseId/rating", authenticate, verifyRole("student"),submitRatingEnrolledCourse);
 
 
 export default router;
