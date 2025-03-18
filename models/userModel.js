@@ -8,6 +8,7 @@ const userSchema = mongoose.Schema(
       required: true,
     },
     lastName: {
+      // gg
       type: String,
       required: true,
     },
