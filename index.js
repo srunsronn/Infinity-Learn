@@ -7,6 +7,7 @@ import cors from "cors";
 import passport from "passport";
 import session from "express-session";
 import GoogleStrategy from "passport-google-oauth20";
+import fileUpload from "express-fileupload";
 
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
@@ -25,6 +26,7 @@ import feedbackRoutes from "./routes/feedbackRoutes.js";
 import bannerRoutes from "./routes/bannerRoutes.js";
 import trackLoginRoutes from "./routes/trackLoginRoutes.js";
 import addToCartRoutes from "./routes/addToCartRoutes.js";
+import engagementRoutes from "./routes/engagementRoutes.js";
 dotenv.config();
 const port = process.env.PORT || 5000;
 connectDB();
@@ -62,6 +64,7 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(fileUpload());
 
 const onlineUsers = new Map();
 
@@ -112,7 +115,7 @@ app.use("/api/v1/enroll", enrolledCourseRoute);
 app.use("/api/v1/banners", bannerRoutes);
 app.use("/api/v1/trackings", trackLoginRoutes);
 app.use("/api/v1/carts", addToCartRoutes);
-
+app.use("/api/v1/engagement", engagementRoutes);
 app.use(errorMiddleware);
 
 // Handle unhandled errors

@@ -3,15 +3,15 @@ import enrolledCourseService from "../../../services/enrolledCourseService.js";
 
 // Create new enrollment
 const enrolledCourse = asyncHandler(async (req, res) => {
-  const { userID, courseID } = req.body;
+  const { student, course } = req.body;
 
-  if (!userID || !courseID) {
+  if (!student || !course) {
     return res
       .status(400)
       .json({ message: "User ID and Course ID are required" });
   }
 
-  const result = await enrolledCourseService.enrolledCourse(userID, courseID);
+  const result = await enrolledCourseService.enrolledCourse(student, course);
   res.status(200).json({ message: "New course enrolled successfully", result });
 });
 
@@ -23,11 +23,47 @@ const getAllEnrolledCourses = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "User ID is required" });
   }
 
-  console.log("Data user in controller: ", id);
   const result = await enrolledCourseService.getAllEnrolledCourses(id);
+
   res
     .status(200)
     .json({ message: "Retrieved all enrolled courses successfully", result });
 });
 
-export { enrolledCourse, getAllEnrolledCourses };
+const getCourseEnrollmentsByInstructor = asyncHandler(async (req, res) => {
+  const instructorID = req.user._id;
+
+  const result = await enrolledCourseService.getCourseEnrollments(instructorID);
+  res.status(200).json({ message: "Retrieved all course enrollments", result });
+});
+const getCourseEnrollmentsMonthly = asyncHandler(async (req, res) => {
+  const instructorID = req.user._id;
+
+  const result = await enrolledCourseService.getCourseEnrollmentsMonthly(
+    instructorID
+  );
+  res
+    .status(200)
+    .json({ message: "Retrieved all course enrollments monthly", result });
+});
+
+const submitRatingEnrolledCourse = asyncHandler(async (req, res)=> {
+  const {courseId} = req.params;
+  const {rating} = req.body;
+  const student = req.user._id;
+
+  if(!rating){
+    return res.status(400).json({message: "Rating is required"});
+  }
+
+  const result = await enrolledCourseService.submitRatingEnrolledCourse(courseId, student, rating);
+  res.status(200).json({message: "Rating submitted successfully", result});
+});
+
+export {
+  enrolledCourse,
+  getAllEnrolledCourses,
+  getCourseEnrollmentsByInstructor,
+  getCourseEnrollmentsMonthly,
+  submitRatingEnrolledCourse
+};

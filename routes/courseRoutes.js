@@ -7,6 +7,7 @@ import {
   getCourseById,
   updateCourse,
   deleteCourse,
+  getCoursesByInstructor,
 } from "../controllers/api/v1/courseController.js";
 const router = express.Router();
 
@@ -30,4 +31,14 @@ router.delete(
   verifyRole("admin", "teacher"),
   deleteCourse
 );
+
+//instructor get course
+router.get(
+  "/instructor/get-courses",
+  authenticate,
+  verifyRole("teacher"),
+  getCoursesByInstructor
+);
+
+
 export default router;

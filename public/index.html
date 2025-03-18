@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Card</title>
+    <link href="/assets/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/assets/checkout-popup.css" />
+    <style>
+      #payway-iframe {
+        width: 100%;
+        height: 500px;
+        border: navy;
+      }
+    </style>
+    <script src="/assets/jquery-3.5.1.min.js"></script>
+    <script src="/assets/bootstrap.min.js"></script>
+    <script src="/assets/checkout-popup.js"></script>
+  </head>
+  <body>
+    <h1>Add Your Card</h1>
+    <iframe id="payway-iframe"></iframe>
+
+    <script>
+      // Fetch the PayWay HTML response from the backend
+      async function fetchPayWayPage() {
+        try {
+          const response = await fetch("/add-card", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch PayWay page");
+          }
+
+          const html = await response.text();
+          console.log("Received HTML:", html);
+          document.getElementById("payway-iframe").srcdoc = html;
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Failed to load PayWay page. Please try again.");
+        }
+      }
+
+      // Call the function to load the PayWay page
+      fetchPayWayPage();
+    </script>
+  </body>
+</html>
