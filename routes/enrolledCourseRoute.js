@@ -9,6 +9,9 @@ import verifyRole from "../middlewares/roleMiddleware.js";
 const router = express.Router();
 
 router.get("/:id", getAllEnrolledCourses);
-router.post("/new-enroll", authenticate, verifyRole("admin"), enrolledCourse);
+router.post(
+  "/new-enroll",
+  /*authenticate, verifyRole("admin"),*/ enrolledCourse
+);
 
 export default router;
