@@ -52,17 +52,6 @@ class EnrolledService extends BaseService {
     }
   }
 
-  // Get all enrolled courses for a user
-  // async getAllEnrolledCourses(userID) {
-  //     try {
-  //         //
-  //         // return await this.model.find({ user: userID }).populate("course");
-  //         return await this.model.find({ user: userID });
-  //     } catch (err) {
-  //         throw new ErrorHandler(500, err.message);
-  //     }
-  // }
-
   async getAllEnrolledCourses(userID) {
     try {
       const coursesEnrolled = await this.model
