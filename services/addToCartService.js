@@ -1,18 +1,17 @@
+import AddToCartModel from "../models/addToCartModel.js";
 import BaseService from "../utils/baseService.js";
-import SaveCourse from "../models/saveCourseModel.js";
+import User from "../models/userModel.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import mongoose from "mongoose";
-import User from "../models/userModel.js";
 import Course from "../models/courseModel.js";
-import path from "path";
-
-class SaveCourseService extends BaseService {
+import { populate } from "dotenv";
+class AddToCartService extends BaseService {
   constructor() {
-    super(SaveCourse);
+    super(AddToCartModel);
   }
 
-  // Toggle save course
-  async saveCourseToggle(userID, courseID) {
+  // Toggle add to cart
+  async addToCartToggle(userID, courseID) {
     try {
       if (
         !mongoose.Types.ObjectId.isValid(userID) ||
@@ -33,26 +32,25 @@ class SaveCourseService extends BaseService {
       }
 
       // Check if the course is already saved
-      const saveCourse = await this.model.findOne({
-        user: userID,
-        course: courseID,
+      const addToCart = await this.model.findOne({
+        userId: userID,
+        courseId: courseID,
       });
 
-      if (saveCourse) {
-        await saveCourse.deleteOne();
+      if (addToCart) {
         return {
           status: 200,
-          message: "Course removed from saved list successfully",
+          message: "Course already added",
         };
       } else {
-        const newSaveCourse = new this.model({
-          user: userID,
-          course: courseID,
+        const newAddToCart = new this.model({
+          userId: userID,
+          courseId: courseID,
         });
-        await newSaveCourse.save();
+        await newAddToCart.save();
         return {
           status: 200,
-          message: "Course added to saved list successfully",
+          message: "Cart added successfully",
         };
       }
     } catch (err) {
@@ -60,27 +58,26 @@ class SaveCourseService extends BaseService {
     }
   }
 
-  // Get all saved courses for a user
-  async getAllSaveCourses(userID) {
+  async getCart(id) {
     try {
-      if (!mongoose.Types.ObjectId.isValid(userID)) {
-        throw new ErrorHandler(400, "Invalid user ID format");
-      }
-
-      const userExists = await User.findById(userID);
-      if (!userExists) {
+      const user = await User.findById(id);
+      if (!user) {
         throw new ErrorHandler(404, "User not found");
       }
-
-      const savedCourses = await this.model.find({ user: userID }).populate({
-        path: "course",
-        populate: { path: "instructor", select: "name" },
-      });
-      return savedCourses;
+      const cart = await this.model
+        .find({ userId: id })
+        .populate({
+          path: "courseId",
+          populate: { path: "instructor", select: "name" },
+        })
+        .populate({
+          path: "userId",
+        });
+      return { message: "Get Cart success", cart };
     } catch (err) {
       throw new ErrorHandler(500, err.message);
     }
   }
 }
 
-export default new SaveCourseService(SaveCourse);
+export default new AddToCartService();

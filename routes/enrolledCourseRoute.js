@@ -4,7 +4,7 @@ import {
   getAllEnrolledCourses,
   getCourseEnrollmentsByInstructor,
   getCourseEnrollmentsMonthly,
-  submitRatingEnrolledCourse
+  submitRatingEnrolledCourse,
 } from "../controllers/api/v1/enrolledCourseController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import verifyRole from "../middlewares/roleMiddleware.js";
@@ -15,12 +15,26 @@ router.get("/:id", getAllEnrolledCourses);
 router.post("/new-enroll", authenticate, verifyRole("student"), enrolledCourse);
 
 // instructor get course enrollments
-router.get("/instructor/get-course-enrollments", authenticate, verifyRole("teacher"), getCourseEnrollmentsByInstructor);
+router.get(
+  "/instructor/get-course-enrollments",
+  authenticate,
+  verifyRole("teacher"),
+  getCourseEnrollmentsByInstructor
+);
 
 // instructor get enrollment monthly
-router.get("/instructor/get-enrollments-monthly", authenticate, verifyRole("teacher"), getCourseEnrollmentsMonthly);
+router.get(
+  "/instructor/get-enrollments-monthly",
+  authenticate,
+  verifyRole("teacher"),
+  getCourseEnrollmentsMonthly
+);
 
-router.post("/:courseId/rating", authenticate, verifyRole("student"),submitRatingEnrolledCourse);
-
+router.post(
+  "/:courseId/rating",
+  authenticate,
+  verifyRole("student"),
+  submitRatingEnrolledCourse
+);
 
 export default router;
