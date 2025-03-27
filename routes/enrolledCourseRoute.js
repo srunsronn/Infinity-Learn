@@ -20,7 +20,7 @@ router.get("/instructor/get-course-enrollments", authenticate, verifyRole("teach
 // instructor get enrollment monthly
 router.get("/instructor/get-enrollments-monthly", authenticate, verifyRole("teacher"), getCourseEnrollmentsMonthly);
 
-router.post("/:courseId/rating", authenticate, verifyRole("student"),submitRatingEnrolledCourse);
+router.post("/:courseId/rating", authenticate, verifyRole("student"), submitRatingEnrolledCourse);
 
 
 export default router;
