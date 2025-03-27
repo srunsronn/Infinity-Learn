@@ -1,64 +1,32 @@
 import asyncHandler from "../../../middlewares/asyncHandler.js";
 import OrderService from "../../../services/orderService.js";
-import notificationService from "../../../services/notificationService.js";
+import dotenv from "dotenv";
+dotenv.config();
 
-const createOrder = asyncHandler(async (req, res) => {
-  const result = await OrderService.create(req.body);
-  await notificationService.create({
-    title: "Order Created",
-    userId: result.userId,
-    message: `Order ${result._id} created successfully`,
+// Create PayPal order
+const createPayPalOrder = asyncHandler(async (req, res) => {
+  const { userId, courseId, amount } = req.body;
+  const { order, approvalUrl } = await OrderService.createPayPalOrder(
+    userId,
+    courseId,
+    amount
+  );
+  res.status(201).json({
+    message: "PayPal order created successfully",
+    order,
+    approvalUrl,
   });
-  res.status(201).json({ message: "Order created successfully", result });
 });
 
-const getOrderById = asyncHandler(async (req, res) => {
-  const orderId = req.params.id;
-  const result = await OrderService.findById(orderId);
-  res.status(200).json({ message: "Get order successfully", result });
-});
-
-const getUserOrders = asyncHandler(async (req, res) => {
-  const userId = req.params.id;
-  const result = await OrderService.findByUserId(userId);
-  res.status(200).json({ message: "Get user orders successfully", result });
-});
-
-const getAllOrders = asyncHandler(async (req, res) => {
-  const result = await OrderService.findAll();
-  res.status(200).json({ message: "Get all orders successfully", result });
-});
-
-const updateOrderById = asyncHandler(async (req, res) => {
-  const orderId = req.params.id;
-  const updatedOrder = await OrderService.updateOrderById(orderId, req.body);
-
-  await notificationService.createNotification({
-    title: "Order Updated",
-    userId: updatedOrder.userId,
-    message: `Order ${updatedOrder._id} updated successfully`,
+const successPayPalOrder = asyncHandler(async (req, res) => {
+  const order = await OrderService.capturePayPalOrder(req.query.token);
+  res.status(200).json({
+    message: "PayPal order captured successfully",
+    order,
   });
-
-  res.status(200).json({ message: "Order updated successfully", updatedOrder });
+});
+const cancelPayPalOrder = asyncHandler(async (req, res) => {
+  res.redirect(`${process.env.FRONTEND_URL}/payment`);
 });
 
-const deleteOrder = asyncHandler(async (req, res) => {
-  const orderId = req.params.id;
-  const deletedOrder = await OrderService.deleteOrder(orderId);
-
-  await notificationService.createNotification({
-    title: "Order Deleted",
-    userId: deletedOrder.userId,
-    message: `Order ${deletedOrder._id} deleted successfully`,
-  });
-
-  res.status(200).json({ message: "Order deleted successfully", deletedOrder });
-});
-export {
-  createOrder,
-  getOrderById,
-  getUserOrders,
-  getAllOrders,
-  updateOrderById,
-  deleteOrder,
-};
+export { createPayPalOrder, successPayPalOrder, cancelPayPalOrder };

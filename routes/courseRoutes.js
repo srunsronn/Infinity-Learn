@@ -11,7 +11,12 @@ import {
 } from "../controllers/api/v1/courseController.js";
 const router = express.Router();
 
-router.get("/", authenticate, getAllCourses);
+router.get(
+  "/",
+  authenticate,
+  verifyRole("admin", "teacher", "student"),
+  getAllCourses
+);
 router.post(
   "/create-course",
   authenticate,

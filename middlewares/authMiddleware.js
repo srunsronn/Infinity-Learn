@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-
+import { redis } from "../config/redis.js";
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -15,6 +15,13 @@ const authenticate = async (req, res, next) => {
 
     // Verify the access token
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    // Check token revocation
+    const isRevoked = await redis.get(`bl_${decoded.tokenId}`);
+    if (isRevoked) {
+      return res
+        .status(401)
+        .json({ message: "Token revoked,please log in again" });
+    }
     req.user = await User.findById(decoded.userId).select("-password");
 
     if (!req.user) {

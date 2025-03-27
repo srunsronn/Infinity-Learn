@@ -17,7 +17,7 @@ const enrolledCourse = asyncHandler(async (req, res) => {
 
 // Get all enrollments of a user
 const getAllEnrolledCourses = asyncHandler(async (req, res) => {
-  const { id } = req.params; // Get user ID from URL params
+  const { id } = req.params; 
 
   if (!id) {
     return res.status(400).json({ message: "User ID is required" });
