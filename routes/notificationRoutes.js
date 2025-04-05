@@ -1,29 +1,20 @@
 import express from "express";
 import { authenticate } from "../middlewares/authMiddleware.js";
-import verifyRole from "../middlewares/roleMiddleware.js";
 import {
   getAllNotifications,
   createNotification,
-  getAllUserNotifications,
-  readNotification,
-  deleteNotification,
-  sendNotification
+  markAsRead,
+  markAllAsRead,
+  getUnreadCount,
 } from "../controllers/api/v1/notificationController.js";
 
 const router = express.Router();
 
-router.post("/create-noti", authenticate, createNotification);
-router.get("/get-all-noti", authenticate, getAllUserNotifications);
-router.put("/:id/read", authenticate, readNotification);
-router.delete("/:id", authenticate, deleteNotification);
-//admin only
-router.get(
-  "/admin/get-all-noti",
-  authenticate,
-  verifyRole("admin"),
-  getAllNotifications
-);
-
-router.post("/send-notification", authenticate, sendNotification)
+// User notifications
+router.get("/", authenticate, getAllNotifications);
+router.post("/", authenticate, createNotification);
+router.put("/:id/read", authenticate, markAsRead);
+router.put("/read-all", authenticate, markAllAsRead);
+router.get("/unread-count", authenticate, getUnreadCount);
 
 export default router;
