@@ -25,7 +25,6 @@ router.get(
 // instructor get enrollment monthly
 router.get("/instructor/get-enrollments-monthly", authenticate, verifyRole("teacher"), getCourseEnrollmentsMonthly);
 
-router.post("/:courseId/rating", authenticate, verifyRole("student"), submitRatingEnrolledCourse);
 router.get(
   "/instructor/get-enrollments-monthly",
   authenticate,
@@ -34,7 +33,7 @@ router.get(
 );
 
 router.post(
-  "/:courseId/rating",
+  "/rating",
   authenticate,
   verifyRole("student"),
   submitRatingEnrolledCourse

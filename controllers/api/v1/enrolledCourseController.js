@@ -48,9 +48,8 @@ const getCourseEnrollmentsMonthly = asyncHandler(async (req, res) => {
 });
 
 const submitRatingEnrolledCourse = asyncHandler(async (req, res) => {
-  const { courseId } = req.params;
-  const { rating } = req.body;
-  const student = req.user._id;
+  const { courseId , rating, student} = req.body;
+
 
   if (!rating) {
     return res.status(400).json({ message: "Rating is required" });

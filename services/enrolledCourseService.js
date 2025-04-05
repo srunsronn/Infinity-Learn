@@ -145,6 +145,7 @@ class EnrolledService extends BaseService {
         return res.status(404).json({ message: "Course not found" });
       }
 
+      // check if user is enrolled in the course
       const enrollment = await EnrolledCourse.findOne({
         course: courseId,
         student: student,
