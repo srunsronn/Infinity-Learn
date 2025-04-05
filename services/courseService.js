@@ -30,7 +30,7 @@ class CourseService extends BaseService {
     try {
       const courses = await this.model.find().populate({
         path: "instructor",
-        select: "name",
+        select: "name email",
       });
       return courses;
     } catch (err) {
@@ -39,8 +39,8 @@ class CourseService extends BaseService {
   }
 
   // get courses by instructor
-  async getCoursesByInstructor(instructorId){
-    return this.model.find({instructor: instructorId});
+  async getCoursesByInstructor(instructorId) {
+    return this.model.find({ instructor: instructorId });
   }
 
   // create course
@@ -93,6 +93,33 @@ class CourseService extends BaseService {
     }
   }
 
+  async addSection(courseId, sectionData) {
+    const course = await this.getCourseById(courseId);
+    if (!course) {
+      throw new ErrorHandler(404, "Course not found");
+    }
+
+    course.sections.push(sectionData);
+    await course.save();
+    return course;
+  }
+
+  async addLecture(courseId, sectionId, lectureData) {
+    const course = await this.getCourseById(courseId);
+    if (!course) {
+      throw new ErrorHandler(404, "Course not found");
+    }
+
+    const section = course.sections.id(sectionId);
+    if (!section) {
+      throw new ErrorHandler(404, "Section not found");
+    }
+
+    section.lectures.push(lectureData);
+    await course.save();
+    return course;
+  }
+
   // delete course
   async deleteCourse(courseID) {
     try {
@@ -107,7 +134,28 @@ class CourseService extends BaseService {
     }
   }
 
- 
+  async calculateCourseDuration(courseId) {
+    try {
+      const course = await this.getCourseById(courseId);
+      if (!course) {
+        throw new ErrorHandler(404, "Course not found");
+      }
+
+      let totalDuration = 0;
+
+      course.sections.forEach((section) => {
+        section.lectures.forEach((lecture) => {
+          if (lecture.video && lecture.video.duration) {
+            totalDuration += lecture.video.duration;
+          }
+        });
+      });
+
+      return totalDuration; 
+    } catch (err) {
+      throw new ErrorHandler(500, err.message);
+    }
+  }
 }
 
 export default new CourseService(Course);

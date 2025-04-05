@@ -5,6 +5,8 @@ import User from "../models/userModel.js";
 import Course from "../models/courseModel.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import courseService from "./courseService.js";
+import notificationService from "./notificationService.js";
+import { io, connectedUsers as onlineUsers } from "../index.js";
 
 class EnrolledService extends BaseService {
   constructor() {
@@ -45,6 +47,20 @@ class EnrolledService extends BaseService {
 
       courseExists.studentsEnrolled += 1;
       await courseExists.save();
+
+      const notification = {
+        title: "Course Enrollment",
+        message: `You have successfully enrolled in ${courseExists.name}`,
+        status: "unread",
+        userId: student,
+      };
+
+      await notificationService.createNotification(notification);
+
+      const receiverSocketId = onlineUsers.get(student.toString())?.socketId; 
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receive-notification", notification);
+      }
 
       return { status: 200, message: "Course enrolled successfully" };
     } catch (err) {

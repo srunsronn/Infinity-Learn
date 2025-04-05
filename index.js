@@ -33,13 +33,67 @@ connectDB();
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
     credentials: true,
   },
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
+
+const connectedUsers = new Map();
+
+io.on("connection", (socket) => {
+  socket.on("authenticate", (userId) => {
+    if (!userId) {
+      socket.disconnect(true);
+      return;
+    }
+
+    connectedUsers.set(userId.toString(), {
+      socketId: socket.id,
+      lastActive: Date.now(),
+    });
+
+    console.log(`User ${userId} authenticated with socket ${socket.id}`);
+  });
+
+  socket.on("disconnect", () => {
+    for (const [userId, userData] of connectedUsers.entries()) {
+      if (userData.socketId === socket.id) {
+        connectedUsers.delete(userId);
+        console.log(`User ${userId} disconnected`);
+        break;
+      }
+    }
+  });
+
+  socket.on("ping", (userId) => {
+    if (userId && connectedUsers.has(userId.toString())) {
+      connectedUsers.get(userId.toString()).lastActive = Date.now();
+    }
+  });
+
+  socket.on("error", (error) => {
+    console.error("Socket error:", error);
+  });
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, userData] of connectedUsers.entries()) {
+    if (now - userData.lastActive > 120000) {
+      io.to(userData.socketId).disconnectSockets(true);
+      connectedUsers.delete(userId);
+      console.log(`Disconnected inactive user ${userId}`);
+    }
+  }
+}, 60000);
+
+export { io, connectedUsers };
 
 app.use(
   cors({
@@ -66,33 +120,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(fileUpload());
 
-const onlineUsers = new Map();
-
-io.on("connection", (socket) => {
-  socket.on("online", (user) => {
-    onlineUsers.set(user._id, socket.id);
-    io.emit("online", Array.from(onlineUsers.keys()));
-  });
-
-  socket.on("send-notification", async (notification) => {
-    const receiverSocketId = onlineUsers.get(notification.receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("receive-notification", notification);
-    }
-    await notificationService.create(notification);
-  });
-
-  socket.on("disconnect", () => {
-    for (const [key, value] of onlineUsers.entries()) {
-      if (value === socket.id) {
-        onlineUsers.delete(key);
-        io.emit("online", Array.from(onlineUsers.keys()));
-        break;
-      }
-    }
-  });
-});
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -118,18 +145,28 @@ app.use("/api/v1/carts", addToCartRoutes);
 app.use("/api/v1/engagement", engagementRoutes);
 app.use(errorMiddleware);
 
-// Handle unhandled errors
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception:", err);
-  process.exit(1);
-});
+const gracefulShutdown = () => {
+  console.log("Received shutdown signal - closing HTTP server");
 
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection:", reason);
-});
+  io.close(() => {
+    console.log("All Socket.io connections closed");
+
+    server.close(() => {
+      console.log("HTTP server closed");
+      process.exit(0);
+    });
+  });
+
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000);
+};
+
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGUSR2", gracefulShutdown);
 
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-
-export { onlineUsers };

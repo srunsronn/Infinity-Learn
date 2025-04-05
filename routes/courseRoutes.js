@@ -8,6 +8,11 @@ import {
   updateCourse,
   deleteCourse,
   getCoursesByInstructor,
+  addSectionToCourse,
+  addLectureToSection,
+  deleteLectureFromSection,
+  deleteSectionFromCourse,
+  getCourseDuration
 } from "../controllers/api/v1/courseController.js";
 const router = express.Router();
 
@@ -40,5 +45,36 @@ router.get(
   getCoursesByInstructor
 );
 
+router.post(
+  "/:id/add-section",
+  authenticate,
+  verifyRole("admin", "teacher"),
+  addSectionToCourse
+);
+router.post(
+  "/:id/add-lecture",
+  authenticate,
+  verifyRole("admin", "teacher"),
+  addLectureToSection
+);
+router.delete(
+  "/:id/delete-lecture",
+  authenticate,
+  verifyRole("admin", "teacher"),
+  deleteLectureFromSection
+);
+
+router.delete(
+  "/:id/delete-section",
+  authenticate,
+  verifyRole("admin", "teacher"),
+  deleteSectionFromCourse
+);
+router.get(
+  "/:id/duration",
+  authenticate,
+  verifyRole("admin", "teacher", "student"),
+  getCourseDuration
+);
 
 export default router;
