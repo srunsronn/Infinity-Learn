@@ -7,7 +7,6 @@ import EnrolledCourseService from "./enrolledCourseService.js";
 dotenv.config();
 
 class OrderService {
-  // Generate PayPal OAuth Token
   async generatePayPalToken() {
     const res = await axios.post(
       `${process.env.PAYPAL_BASE_URL}/v1/oauth2/token`,
@@ -25,14 +24,26 @@ class OrderService {
     return res.data.access_token;
   }
 
-  // Create PayPal order
-  async createPayPalOrder(userId, courseId, amount, currency = "USD") {
+  // Create PayPal order supporting multiple courses
+  async createPayPalOrder(userId, courseIds, amount, currency = "USD") {
     const token = await this.generatePayPalToken();
 
-    const course = await Course.findById(courseId);
-    if (!course) {
-      throw new Error("Course not found");
+    // Retrieve multiple courses using the array of courseIds
+    const courses = await Course.find({ _id: { $in: courseIds } });
+    if (!courses || courses.length === 0) {
+      throw new Error("Courses not found");
     }
+
+    // Build purchase items array from all courses
+    const purchaseItems = courses.map((course) => ({
+      name: course.name,
+      description: course.description,
+      quantity: "1",
+      unit_amount: {
+        currency_code: currency,
+        value: course.price,
+      },
+    }));
 
     try {
       const res = await axios.post(
@@ -41,17 +52,7 @@ class OrderService {
           intent: "CAPTURE",
           purchase_units: [
             {
-              items: [
-                {
-                  name: course.name,
-                  description: course.description,
-                  quantity: "1",
-                  unit_amount: {
-                    currency_code: currency,
-                    value: amount,
-                  },
-                },
-              ],
+              items: purchaseItems,
               amount: {
                 currency_code: currency,
                 value: amount,
@@ -81,16 +82,15 @@ class OrderService {
       );
 
       const { id, links } = res.data;
-
       const approvalLink = links.find((link) => link.rel === "approve");
       if (!approvalLink) {
         throw new Error("Approval link is missing in PayPal response");
       }
 
-      // Save order with transaction ID
+      // Save order with courseIds as an array
       const order = new Order({
         userId,
-        courseId,
+        courseId: courseIds, // now expecting an array
         amount,
         transactionId: id,
         status: "pending",
@@ -111,10 +111,8 @@ class OrderService {
     }
   }
 
-  // Capture PayPal order
   async capturePayPalOrder(orderId) {
     const token = await this.generatePayPalToken();
-
     const res = await axios.post(
       `${process.env.PAYPAL_BASE_URL}/v2/checkout/orders/${orderId}/capture`,
       {},
@@ -130,9 +128,10 @@ class OrderService {
       if (order) {
         order.status = "completed";
         await order.save();
-
-        //call enroll course service
-        await EnrolledCourseService.enrolledCourse(order.userId, order.courseId);
+        await EnrolledCourseService.enrolledCourse(
+          order.userId,
+          order.courseId
+        );
       } else {
         throw new Error("Order not found");
       }
@@ -147,4 +146,4 @@ class OrderService {
   }
 }
 
-export default new OrderService(Order);
+export default new OrderService();
