@@ -4,6 +4,7 @@ import enrolledCourseService from "../../../services/enrolledCourseService.js";
 // Create new enrollment
 const enrolledCourse = asyncHandler(async (req, res) => {
   const { student, course } = req.body;
+  console.log(student, course);
 
   if (!student || !course) {
     return res
@@ -15,7 +16,6 @@ const enrolledCourse = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "New course enrolled successfully", result });
 });
 
-// Get all enrollments of a user
 const getAllEnrolledCourses = asyncHandler(async (req, res) => {
   const { id } = req.params; 
 
