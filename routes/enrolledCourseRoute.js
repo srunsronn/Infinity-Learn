@@ -5,6 +5,7 @@ import {
   getCourseEnrollmentsByInstructor,
   getCourseEnrollmentsMonthly,
   submitRatingEnrolledCourse,
+  getRatingCourse,
 } from "../controllers/api/v1/enrolledCourseController.js";
 import { authenticate } from "../middlewares/authMiddleware.js";
 import verifyRole from "../middlewares/roleMiddleware.js";
@@ -37,6 +38,13 @@ router.post(
   authenticate,
   verifyRole("student"),
   submitRatingEnrolledCourse
+);
+
+router.get(
+  "/:courseId/ratings",
+  authenticate,
+  verifyRole("student"),
+  getRatingCourse
 );
 
 export default router;

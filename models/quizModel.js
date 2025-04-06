@@ -1,18 +1,35 @@
 import mongoose from "mongoose";
 
-const quizSchema = new mongoose.Schema(
+const questionSchema = new mongoose.Schema(
   {
-    lesson_id: { type: mongoose.Schema.Types.ObjectId, ref: "Lesson", required: true },
-    title: { type: String, required: true },
-    description: { type: String },
-    time_limit: { type: Number, required: true }, // in minutes
-    is_active: { type: Boolean, default: true },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now }
+    question_text: { type: String, required: true },
+    options: [{ type: String, required: true }], 
+    correct_answer: [{ type: Number, required: true }], 
+    type: {
+      type: String,
+      enum: ["single-choice", "multiple-choice"],
+      required: true,
+    },
   },
-  { timestamps: true } // Automatically adds createdAt and updatedAt
+  { _id: false } 
 );
 
-
+const quizSchema = new mongoose.Schema(
+  {
+    section_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Section",
+      required: true,
+    }, 
+    title: { type: String, required: true },
+    description: { type: String }, 
+    time_limit: { type: Number, required: true }, 
+    passing_score: { type: Number, default: 50 }, 
+    is_active: { type: Boolean, default: true },
+    
+    questions: [questionSchema], 
+  },
+  { timestamps: true } 
+);
 
 export default mongoose.model("Quiz", quizSchema);

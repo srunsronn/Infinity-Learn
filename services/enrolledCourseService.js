@@ -5,6 +5,8 @@ import User from "../models/userModel.js";
 import Course from "../models/courseModel.js";
 import ErrorHandler from "../utils/errorHandler.js";
 import courseService from "./courseService.js";
+import notificationService from "./notificationService.js";
+import { io, connectedUsers as onlineUsers } from "../index.js";
 
 class EnrolledService extends BaseService {
   constructor() {
@@ -45,6 +47,20 @@ class EnrolledService extends BaseService {
 
       courseExists.studentsEnrolled += 1;
       await courseExists.save();
+
+      const notification = {
+        title: "Course Enrollment",
+        message: `You have successfully enrolled in ${courseExists.name}`,
+        status: "unread",
+        userId: student,
+      };
+
+      await notificationService.createNotification(notification);
+
+      const receiverSocketId = onlineUsers.get(student.toString())?.socketId; 
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("receive-notification", notification);
+      }
 
       return { status: 200, message: "Course enrolled successfully" };
     } catch (err) {
@@ -163,13 +179,34 @@ class EnrolledService extends BaseService {
         course: courseId,
         rating: { $gt: 0 },
       });
-      const averageRating =
-        ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length;
+      const averageRating = ratings.length > 0 ?  ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length : 0;
+       
 
       course.averageTRating = averageRating;
       await course.save();
 
       return { averageRating };
+    } catch (err) {
+      throw new ErrorHandler(500, err.message);
+    }
+  }
+
+  async getRatingCourse(courseId) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        throw new ErrorHandler(400, "Invalid course ID format");
+      }
+
+      const course = await Course.findById(courseId);
+      if (!course) {
+        throw new ErrorHandler(404, "Course not found");
+      }
+
+      const ratings = course.ratings.map(rating => ({
+        rating: rating.rating,
+      }))
+
+      return {ratings};
     } catch (err) {
       throw new ErrorHandler(500, err.message);
     }
