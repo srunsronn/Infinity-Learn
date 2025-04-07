@@ -24,17 +24,21 @@ class OrderService {
     return res.data.access_token;
   }
 
-  // Create PayPal order supporting multiple courses
-  async createPayPalOrder(userId, courseIds, amount, currency = "USD") {
+  // Now accepts an object with additional fields
+  async createPayPalOrder({
+    userId,
+    courseIds,
+    amount,
+    orderId: customOrderId,
+    transactionId: customTransactionId,
+    currency = "USD",
+  }) {
     const token = await this.generatePayPalToken();
-
-    // Retrieve multiple courses using the array of courseIds
     const courses = await Course.find({ _id: { $in: courseIds } });
     if (!courses || courses.length === 0) {
       throw new Error("Courses not found");
     }
 
-    // Build purchase items array from all courses
     const purchaseItems = courses.map((course) => ({
       name: course.name,
       description: course.description,
@@ -44,6 +48,7 @@ class OrderService {
         value: course.price,
       },
     }));
+    //console.log(purchaseItems);
 
     try {
       const res = await axios.post(
@@ -87,20 +92,26 @@ class OrderService {
         throw new Error("Approval link is missing in PayPal response");
       }
 
-      // Save order with courseIds as an array
+      // Use the custom orderId if provided, otherwise fallback to PayPal id
+      const finalOrderId = customOrderId || id;
+      // Use the custom transactionId if provided, otherwise fallback to finalOrderId
+      const finalTransactionId = customTransactionId || finalOrderId;
+
       const order = new Order({
         userId,
-        courseId: courseIds, // now expecting an array
+        courseId: courseIds,
         amount,
-        transactionId: id,
+        orderId: finalOrderId,
+        transactionId: finalTransactionId,
         status: "pending",
       });
+      console.log(order);
       await order.save();
 
       return {
-        order: res.data,
+        order: order,
         approvalUrl: approvalLink.href,
-        transactionId: id,
+        transactionId: order.transactionId,
       };
     } catch (error) {
       console.error(
@@ -124,7 +135,10 @@ class OrderService {
       }
     );
     try {
-      const order = await Order.findOne({ transactionId: orderId });
+      // Check for a matching order by either "orderId" or "transactionId"
+      const order = await Order.findOne({
+        $or: [{ orderId: orderId }, { transactionId: orderId }],
+      });
       if (order) {
         order.status = "completed";
         await order.save();
