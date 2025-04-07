@@ -1,4 +1,3 @@
-import MongoStore from "connect-mongo";
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
@@ -6,8 +5,10 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import passport from "passport";
-import fileUpload from "express-fileupload";
 import session from "express-session";
+import GoogleStrategy from "passport-google-oauth20";
+import fileUpload from "express-fileupload";
+
 import notificationService from "./services/notificationService.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -28,17 +29,13 @@ import addToCartRoutes from "./routes/addToCartRoutes.js";
 import engagementRoutes from "./routes/engagementRoutes.js";
 import recommendationRoutes from "./routes/recommendCourseRoute.js";
 import sessionConfig from "./update-session.js";
-import heathRoutes from "./routes/healthRoutes.js";
-
 dotenv.config();
-
 const port = process.env.PORT || 5000;
 connectDB();
 
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.IO
 const io = new Server(server, {
   cors: {
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -51,7 +48,6 @@ const io = new Server(server, {
 
 const connectedUsers = new Map();
 
-// Socket.IO connection management
 io.on("connection", (socket) => {
   socket.on("authenticate", (userId) => {
     if (!userId) {
@@ -88,7 +84,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Disconnect inactive users every minute
 setInterval(() => {
   const now = Date.now();
   for (const [userId, userData] of connectedUsers.entries()) {
@@ -100,36 +95,8 @@ setInterval(() => {
   }
 }, 60000);
 
-// MongoDB session store configuration
-let store;
-try {
-  store = MongoStore.create({
-    mongoUrl: process.env.MONGODB_URL,
-    ttl: 14 * 24 * 60 * 60, // 14 days
-    touchAfter: 24 * 3600, // time period in seconds to refresh session
-  });
-  console.log("Using MongoDB for session storage");
-} catch (error) {
-  console.error("Error setting up MongoDB session store:", error);
-  console.warn("Falling back to memory store - NOT RECOMMENDED FOR PRODUCTION");
-  store = null; // This will default to MemoryStore as a last resort
-}
+export { io, connectedUsers };
 
-// Session configuration with fallback
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET || "default_secret",
-  resave: false,
-  saveUninitialized: false,
-  store: store,
-  cookie: {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 14 * 24 * 60 * 60 * 1000, // 14 days in milliseconds
-  },
-};
-
-// CORS configuration
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
@@ -138,27 +105,32 @@ app.use(
   })
 );
 
-// Session middleware setup
-app.use(session(sessionConfig));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "default_secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+      sameSite: "lax",
+    },
+  })
+);
+app.use(passport.session(sessionConfig));
 
-// Passport session initialization
 app.use(passport.initialize());
 app.use(passport.session());
-
-// File upload middleware
 app.use(fileUpload());
 
-// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Routes
 app.get("/", (req, res) => {
   res.send("Backend is running...");
 });
 
-app.use("/api/v1/health", heathRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/users", userRoutes);
@@ -176,10 +148,8 @@ app.use("/api/v1/carts", addToCartRoutes);
 app.use("/api/v1/engagement", engagementRoutes);
 app.use("/api/v1/recommendations", recommendationRoutes);
 
-// Error middleware
 app.use(errorMiddleware);
 
-// Graceful shutdown setup
 const gracefulShutdown = () => {
   console.log("Received shutdown signal - closing HTTP server");
 
@@ -198,12 +168,10 @@ const gracefulShutdown = () => {
   }, 10000);
 };
 
-// Shutdown signal handling
 process.on("SIGINT", gracefulShutdown);
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGUSR2", gracefulShutdown);
 
-// Start the server
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
