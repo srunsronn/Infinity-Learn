@@ -1,11 +1,8 @@
 import asyncHandler from "../../../middlewares/asyncHandler.js";
 import enrolledCourseService from "../../../services/enrolledCourseService.js";
 
-// Create new enrollment(s). Accepts an array of courseIds.
 const enrolledCourse = asyncHandler(async (req, res) => {
-  // Use req.user._id as student ID via authentication middleware.
   const student = req.user._id;
-  // Expect an array of course IDs in req.body.courseIds. Fallback if a single course is provided.
   let courseIds = req.body.courseIds;
   if (!courseIds) {
     const { course } = req.body;
@@ -17,7 +14,6 @@ const enrolledCourse = asyncHandler(async (req, res) => {
     courseIds = [course];
   }
 
-  // Process enrollments for each course
   const results = await Promise.all(
     courseIds.map((courseId) =>
       enrolledCourseService.enrolledCourse(student, courseId)
