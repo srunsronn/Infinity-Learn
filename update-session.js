@@ -1,5 +1,4 @@
 import MongoStore from "connect-mongo";
-
 // Session configuration with error handling
 let store;
 try {

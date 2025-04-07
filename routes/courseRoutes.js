@@ -12,14 +12,12 @@ import {
   addLectureToSection,
   deleteLectureFromSection,
   deleteSectionFromCourse,
-  getCourseDuration
+  getCourseDuration,
 } from "../controllers/api/v1/courseController.js";
 const router = express.Router();
 
 router.get(
   "/",
-  authenticate,
-  verifyRole("admin", "teacher", "student"),
   getAllCourses
 );
 router.post(
