@@ -18,9 +18,7 @@ const router = express.Router();
 
 router.get(
   "/",
-  authenticate,
-  verifyRole("admin", "teacher", "student"),
-  getAllCourses
+   getAllCourses
 );
 router.post(
   "/create-course",
