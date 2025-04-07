@@ -51,6 +51,8 @@ class UserService extends BaseService {
   // async createQuiz(data){
   //     return this.create(data);
   // }
+
+  
 }
 
 export default new UserService(User);

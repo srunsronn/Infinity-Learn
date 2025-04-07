@@ -30,7 +30,7 @@ class CourseService extends BaseService {
     try {
       const courses = await this.model.find().populate({
         path: "instructor",
-        select: "name email",
+        select: "firstName lastName", 
       });
       return courses;
     } catch (err) {
