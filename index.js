@@ -118,9 +118,10 @@ app.use(
     },
   })
 );
+app.use(passport.session(sessionConfig));
 
 app.use(passport.initialize());
-app.use(passport.session(sessionConfig));
+app.use(passport.session());
 app.use(fileUpload());
 
 app.use(express.json());
