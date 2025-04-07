@@ -29,6 +29,7 @@ import addToCartRoutes from "./routes/addToCartRoutes.js";
 import engagementRoutes from "./routes/engagementRoutes.js";
 import recommendationRoutes from "./routes/recommendCourseRoute.js";
 import sessionConfig from "./update-session.js";
+import heathRoutes from "./routes/healthRoutes.js";
 dotenv.config();
 const port = process.env.PORT || 5000;
 connectDB();
@@ -130,6 +131,7 @@ app.get("/", (req, res) => {
   res.send("Backend is running...");
 });
 
+app.use("/api/v1/health", heathRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1/users", userRoutes);
