@@ -23,6 +23,11 @@ const orderSchema = mongoose.Schema(
       enum: ["pending", "approved", "completed", "failed"],
       default: "pending",
     },
+    orderId: {
+      type: String,
+      unique: true,
+      required: true,
+    },
     transactionId: {
       type: String,
       unique: true,
@@ -30,4 +35,5 @@ const orderSchema = mongoose.Schema(
   },
   { timestamps: true }
 );
+
 export default mongoose.model("Order", orderSchema);
