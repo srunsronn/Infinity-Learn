@@ -13,56 +13,59 @@ class EnrolledService extends BaseService {
     super(EnrolledCourse);
   }
 
-  async enrolledCourse(student, course) {
+  async enrolledCourse(student, courseIds) {
     try {
-      if (
-        !mongoose.Types.ObjectId.isValid(student) ||
-        !mongoose.Types.ObjectId.isValid(course)
-      ) {
-        throw new ErrorHandler(400, "Invalid user or course ID format");
+      // courseIds is expected to be an array
+      for (const courseId of courseIds) {
+        if (
+          !mongoose.Types.ObjectId.isValid(student) ||
+          !mongoose.Types.ObjectId.isValid(courseId)
+        ) {
+          throw new ErrorHandler(400, "Invalid user or course ID format");
+        }
+
+        // Check if user and course exist
+        const userExists = await User.findById(student);
+        const courseExists = await Course.findById(courseId);
+
+        if (!userExists || !courseExists) {
+          throw new ErrorHandler(404, "User or course not found");
+        }
+
+        // Check if already enrolled in this course
+        const existingEnrollment = await this.model.findOne({
+          student,
+          course: courseId,
+        });
+        if (existingEnrollment) {
+          continue; // or optionally throw an error
+        }
+
+        const newEnrollCourse = new this.model({
+          student,
+          course: courseId,
+        });
+        await newEnrollCourse.save();
+
+        // Increase enrolled count
+        courseExists.studentsEnrolled =
+          (courseExists.studentsEnrolled || 0) + 1;
+        await courseExists.save();
+
+        // Send notification if needed
+        const notification = {
+          title: "Course Enrollment",
+          message: `You have successfully enrolled in ${courseExists.name}`,
+          status: "unread",
+          userId: student,
+        };
+        await notificationService.createNotification(notification);
+        const receiverSocketId = onlineUsers.get(student.toString())?.socketId;
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("receive-notification", notification);
+        }
       }
-
-      // Check if user and course exist
-      const userExists = await User.findById(student);
-      const courseExists = await Course.findById(course);
-
-      if (!userExists || !courseExists) {
-        throw new ErrorHandler(404, "User or course not found");
-      }
-
-      // Check if already enrolled
-      const existingEnrollment = await this.model.findOne({
-        student: student,
-        course: course,
-      });
-      if (existingEnrollment) {
-        throw new ErrorHandler(400, "User is already enrolled in this course");
-      }
-
-      const newEnrollCourse = new this.model({
-        student: student,
-        course: course,
-      });
-      await newEnrollCourse.save();
-
-      courseExists.studentsEnrolled += 1;
-      await courseExists.save();
-
-      const notification = {
-        title: "Course Enrollment",
-        message: `You have successfully enrolled in ${courseExists.name}`,
-        status: "unread",
-        userId: student,
-      };
-
-      await notificationService.createNotification(notification);
-
-      const receiverSocketId = onlineUsers.get(student.toString())?.socketId; 
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receive-notification", notification);
-      }
-
-      return { status: 200, message: "Course enrolled successfully" };
+      return { status: 200, message: "All courses enrolled successfully" };
     } catch (err) {
       throw new ErrorHandler(500, err.message);
     }
