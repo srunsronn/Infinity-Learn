@@ -75,7 +75,13 @@ class EnrolledService extends BaseService {
     try {
       const coursesEnrolled = await this.model
         .find({ student: userID })
-        .populate("course");
+        .populate({
+          path: "course",
+          populate: {
+            path: "instructor",
+            select: "firstName lastName profile", // Include profile picture if needed
+          },
+        });
 
       return coursesEnrolled;
     } catch (err) {

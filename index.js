@@ -27,7 +27,9 @@ import bannerRoutes from "./routes/bannerRoutes.js";
 import trackLoginRoutes from "./routes/trackLoginRoutes.js";
 import addToCartRoutes from "./routes/addToCartRoutes.js";
 import engagementRoutes from "./routes/engagementRoutes.js";
-import videoProgressRouter from "./routes//videoProgressRouter.js";
+import recommendationRoutes from "./routes/recommendCourseRoute.js";
+// import sessionConfig from "./update-session.js";
+import videoProgressRouter from "./routes/videoProgressRouter.js";
 dotenv.config();
 const port = process.env.PORT || 5000;
 connectDB();
@@ -116,6 +118,7 @@ app.use(
     },
   })
 );
+// app.use(passport.session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -144,6 +147,7 @@ app.use("/api/v1/banners", bannerRoutes);
 app.use("/api/v1/trackings", trackLoginRoutes);
 app.use("/api/v1/carts", addToCartRoutes);
 app.use("/api/v1/engagement", engagementRoutes);
+app.use("/api/v1/recommendations", recommendationRoutes);
 app.use("/api/v1/videoProgress", videoProgressRouter);
 app.use(errorMiddleware);
 
