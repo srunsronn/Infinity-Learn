@@ -17,7 +17,7 @@ class CourseService extends BaseService {
         //use populate to get name of instructor
         .populate({
           path: "instructor",
-          select: "name",
+          select: "firstName lastName profile",
         });
       return course;
     } catch (err) {
@@ -60,7 +60,7 @@ class CourseService extends BaseService {
       // Populate the instructor field
       const populatedCourse = await this.model.findById(course._id).populate({
         path: "instructor",
-        select: "name",
+        select: "firstName lastName",
       }); // Populate instructor reference
       return populatedCourse;
     } catch (err) {

@@ -20,8 +20,6 @@ router.get(
   getCourseSimilarRecommendations
 );
 
-// Interest-based recommendations (publicly accessible)
-router.post("/interest", getInterestRecommendations);
 
 // Interest-based recommendations (publicly accessible)
 router.post("/interest", getInterestRecommendations);

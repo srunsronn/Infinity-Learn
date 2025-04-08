@@ -74,7 +74,7 @@ class SaveCourseService extends BaseService {
 
       const savedCourses = await this.model.find({ user: userID }).populate({
         path: "course",
-        populate: { path: "instructor", select: "name" },
+        populate: { path: "instructor", select: "firstName lastName" },
       });
       return savedCourses;
     } catch (err) {
