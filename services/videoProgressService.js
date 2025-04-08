@@ -86,7 +86,6 @@ export const getCourseProgress = async (userId, courseId) => {
   try {
     // Get all video progress records for the given user and course
     const records = await VideoProgress.find({ userId, courseId });
-    console.log("Progress records for course:", records);
 
     // Sum up the progress from records (if a lecture has no record, its progress is 0)
     const sumProgress = records.reduce(
@@ -109,7 +108,6 @@ export const getCourseProgress = async (userId, courseId) => {
         ).length;
       }
     });
-    console.log(`Course ${courseId} has totalVideos: ${totalVideos}`);
 
     // Compute overall progress:
     // For example, if sumProgress is 100 and there are 2 sections with videos, computed progress is 50.
@@ -135,7 +133,6 @@ export const getAllCourseProgressByUser = async (userId) => {
   try {
     // Get all video progress records for the user
     const records = await VideoProgress.find({ userId });
-    console.log("Progress records:", records);
     if (!records.length) return [];
 
     // Group records by courseId and sum their progress
@@ -165,7 +162,6 @@ export const getAllCourseProgressByUser = async (userId) => {
           ).length;
         }
       });
-      console.log(`Course ${courseId} has totalVideos: ${totalVideos}`);
       // If the course contains two videos and only one progress record exists with progress 100,
       // computedProgress should be Math.round(100 / 2) = 50.
       const computedProgress =

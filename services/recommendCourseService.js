@@ -17,29 +17,59 @@ class RecommendationCourseService extends BaseService {
     // Flag to track if Flask API is available
     this.flaskApiAvailable = false;
 
-    // Check API availability on startup
+    // Try to reconnect every 5 minutes
     this.checkFlaskApiAvailability().catch((err) => {
       console.log("Flask API not available on startup:", err.message);
     });
+
+    // Periodically check if the Flask API becomes available
+    setInterval(() => {
+      if (!this.flaskApiAvailable) {
+        this.checkFlaskApiAvailability()
+          .then((available) => {
+            if (available) console.log("Flask API is now available!");
+          })
+          .catch(() => {});
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
   }
 
   async checkFlaskApiAvailability() {
     try {
-      const response = await axios.get(
-        `${this.apiBaseUrl.replace("/api", "")}/api/health`,
-        {
-          timeout: 2000, // 2 second timeout
-        }
-      );
+      // Try with the direct health endpoint first
+      const response = await axios.get(`${this.apiBaseUrl}/health`, {
+        timeout: 5000, // Increase timeout to 5 seconds
+      });
+
       this.flaskApiAvailable = true;
       console.log("Flask API is available:", response.data);
       return true;
-    } catch (error) {
-      this.flaskApiAvailable = false;
-      console.log(
-        "Flask API is not available - using MongoDB recommendations only"
-      );
-      return false;
+    } catch (firstError) {
+      try {
+        // Try alternate path structure if first attempt fails
+        const alternateUrl = `${this.apiBaseUrl.replace(
+          "/api",
+          ""
+        )}/api/health`;
+        console.log(
+          `First health check failed, trying alternate URL: ${alternateUrl}`
+        );
+
+        const response = await axios.get(alternateUrl, {
+          timeout: 5000,
+        });
+
+        this.flaskApiAvailable = true;
+        console.log("Flask API is available at alternate URL:", response.data);
+        return true;
+      } catch (error) {
+        this.flaskApiAvailable = false;
+        console.log(
+          "Flask API is not available - using MongoDB recommendations only:",
+          error.message
+        );
+        return false;
+      }
     }
   }
 
@@ -249,54 +279,127 @@ class RecommendationCourseService extends BaseService {
     }
   }
 
-  async getInterestBasedMongoDBRecommendations(interestText, count = 5) {
+  async getPersonalizedMongoDBRecommendations(userId, count = 5) {
     try {
+      // Get user's enrolled courses
+      const EnrolledCourse = mongoose.model("EnrolledCourse");
+      const User = mongoose.model("User");
       const Course = mongoose.model("Course");
 
-      // Create search terms from interest text
-      const searchTerms = interestText
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((term) => term.length > 2);
+      // Find user info to get interests
+      const user = await User.findById(userId).select("interests");
+      if (!user) {
+        console.log(`User with ID ${userId} not found`);
+        return await this.getNewUserRecommendations(count);
+      }
 
-      if (searchTerms.length === 0) {
-        // If no valid search terms, return popular courses
-        const popularCourses = await Course.find()
-          .sort({ studentsEnrolled: -1 })
-          .limit(count)
+      // Get all courses this user is enrolled in
+      const enrollments = await EnrolledCourse.find({
+        student: userId,
+      }).populate("course", "name courseTopic _id");
+
+      if (!enrollments || enrollments.length === 0) {
+        console.log(`No enrollments found for user ${userId}`);
+        // No enrollments, return recommendations for new users
+        return await this.getNewUserRecommendations(count);
+      }
+
+      console.log(`Found ${enrollments.length} enrollments for user ${userId}`);
+
+      // Extract course topics and ids from enrollments (with null checks)
+      const enrolledCourseIds = enrollments
+        .filter((e) => e.course) // Filter out null courses
+        .map((e) => e.course._id);
+
+      const enrolledTopics = enrollments
+        .filter((e) => e.course && e.course.courseTopic)
+        .map((e) => e.course.courseTopic);
+
+      console.log(`Enrolled topics: ${enrolledTopics.join(", ")}`);
+
+      if (enrolledCourseIds.length === 0) {
+        console.log(
+          "No valid enrolled courses found, falling back to new user recs"
+        );
+        return await this.getNewUserRecommendations(count);
+      }
+
+      // Count topics to find most frequent ones
+      const topicFrequency = {};
+      enrolledTopics.forEach((topic) => {
+        topicFrequency[topic] = (topicFrequency[topic] || 0) + 1;
+      });
+
+      // Sort topics by frequency
+      const sortedTopics = Object.keys(topicFrequency).sort(
+        (a, b) => topicFrequency[b] - topicFrequency[a]
+      );
+
+      // Get user interests (if any)
+      const userInterests = user?.interests || [];
+
+      // Combine user interests with enrolled topics
+      const preferredTopics = [...new Set([...sortedTopics, ...userInterests])];
+      console.log(`Preferred topics: ${preferredTopics.join(", ")}`);
+
+      // Find courses with the same topics but not already enrolled
+      let recommendedCourses = [];
+
+      if (preferredTopics.length > 0) {
+        // First try to get courses with the same topics
+        recommendedCourses = await Course.find({
+          _id: { $nin: enrolledCourseIds },
+          courseTopic: { $in: preferredTopics },
+        })
+          .limit(Math.round(count * 0.8)) // 80% from preferred topics
           .select(
             "_id name courseTopic price courseThumbnail instructor studentsEnrolled"
           )
           .lean();
 
-        // Format and return popular courses
-        return this.formatCourseResults(popularCourses, "Popular courses");
+        console.log(
+          `Found ${recommendedCourses.length} courses with preferred topics`
+        );
       }
 
-      // Create regex pattern for each search term
-      const searchConditions = searchTerms.map((term) => ({
-        $or: [
-          { name: { $regex: term, $options: "i" } },
-          { description: { $regex: term, $options: "i" } },
-          { courseTopic: { $regex: term, $options: "i" } },
-        ],
-      }));
+      // If we need more recommendations, add some popular courses
+      if (recommendedCourses.length < count) {
+        const remainingCount = count - recommendedCourses.length;
 
-      // Search for matching courses
-      const matchingCourses = await Course.find({ $or: searchConditions })
-        .limit(count)
-        .select(
-          "_id name courseTopic price courseThumbnail instructor studentsEnrolled"
-        )
-        .lean();
+        // Get popular courses not already recommended or enrolled
+        const excludedIds = [
+          ...enrolledCourseIds,
+          ...recommendedCourses.map((c) => c._id),
+        ];
 
-      // Format and return interest-based recommendations
-      return this.formatCourseResults(matchingCourses, interestText);
+        const popularCourses = await Course.find({
+          _id: { $nin: excludedIds },
+        })
+          .sort({ studentsEnrolled: -1 })
+          .limit(remainingCount)
+          .select(
+            "_id name courseTopic price courseThumbnail instructor studentsEnrolled"
+          )
+          .lean();
+
+        console.log(
+          `Added ${popularCourses.length} popular courses to recommendations`
+        );
+        recommendedCourses = [...recommendedCourses, ...popularCourses];
+      }
+
+      // Format the response
+      const result = await this.formatCourseResults(
+        recommendedCourses,
+        "Personalized recommendations"
+      );
+
+      return result;
     } catch (error) {
-      console.error("Error in MongoDB interest recommendations:", error);
+      console.error("Error generating personalized recommendations:", error);
       return {
         status: "error",
-        message: "Failed to find matching courses",
+        message: "Failed to generate personalized recommendations",
         recommendations: [],
       };
     }
@@ -342,6 +445,7 @@ class RecommendationCourseService extends BaseService {
           course_topic: course.courseTopic,
           price: course.price,
           thumbnail: course.courseThumbnail,
+          description: course.description || "", // Add description here
           instructor_name: instructorName,
           students_enrolled: course.studentsEnrolled || 0,
           similarity_score: 0.7, // Default similarity score
@@ -367,31 +471,76 @@ class RecommendationCourseService extends BaseService {
 
   async getPersonalizedRecommendations(userId, count = 5) {
     try {
+      console.log(`Starting personalized recommendations for user: ${userId}`);
+
       // Try Flask API if available
       if (this.flaskApiAvailable) {
         try {
           // First get user's enrolled courses
           const EnrolledCourse = mongoose.model("EnrolledCourse");
+          const User = mongoose.model("User");
+
+          // Get enrollment data
           const enrolledCourses = await EnrolledCourse.find({
             student: userId,
           }).select("course");
 
-          const courseIds = enrolledCourses.map((e) => e.course.toString());
+          // Get user data for interests
+          const user = await User.findById(userId).select("interests");
+          const userInterests = user?.interests || [];
 
-          if (courseIds.length === 0) {
-            // User has no enrolled courses, get recommendations for new users
+          const courseIds = enrolledCourses
+            .filter((e) => e.course) // Filter out null courses
+            .map((e) => e.course.toString());
+
+          console.log(
+            `Found ${courseIds.length} enrolled courses for Flask API`
+          );
+
+          // If user has no enrolled courses, check if they have interests
+          if (courseIds.length === 0 && userInterests.length === 0) {
+            console.log(
+              "No courses or interests, returning new user recommendations"
+            );
+            // No courses or interests, get recommendations for new users
             return await this.getNewUserRecommendations(count);
           }
 
-          // Use Flask API for user recommendations
+          // Use Flask API for user recommendations with enhanced metadata
+          console.log(
+            `Calling Flask API at ${this.apiBaseUrl}/recommendations/user`
+          );
           const response = await axios.post(
             `${this.apiBaseUrl}/recommendations/user`,
             {
               enrolled_courses: courseIds,
+              user_interests: userInterests,
+              user_id: userId.toString(),
               count,
+            },
+            {
+              timeout: 5000, // Add a timeout
             }
           );
-          return response.data;
+
+          // Ensure response has the expected structure
+          if (
+            response.data &&
+            response.data.status === "ok" &&
+            response.data.recommendations &&
+            response.data.recommendations.length > 0
+          ) {
+            console.log(
+              `Got successful response from Flask API with ${response.data.recommendations.length} recommendations`
+            );
+            return response.data;
+          } else {
+            console.log(
+              "Flask API returned unexpected structure:",
+              JSON.stringify(response.data).substring(0, 200)
+            );
+            throw new Error("Invalid response structure from Flask API");
+          }
         } catch (apiError) {
           console.error(
             "Flask API user recommendation failed:",
@@ -401,7 +550,6 @@ class RecommendationCourseService extends BaseService {
         }
       }
 
-      // Fallback to MongoDB-based recommendation
       return await this.getPersonalizedMongoDBRecommendations(userId, count);
     } catch (error) {
       console.error(
@@ -424,22 +572,34 @@ class RecommendationCourseService extends BaseService {
 
       // Find user info to get interests
       const user = await User.findById(userId).select("interests");
+      if (!user) {
+        console.log(`User with ID ${userId} not found`);
+        return await this.getNewUserRecommendations(count);
+      }
 
       // Get all courses this user is enrolled in
       const enrollments = await EnrolledCourse.find({
         student: userId,
       }).populate("course", "name courseTopic _id");
 
-      if (!enrollments || enrollments.length === 0) {
-        // No enrollments, return recommendations for new users
+      // Extract course topics and ids from enrollments with null checks
+      const enrolledCourseIds = [];
+      const enrolledTopics = [];
+
+      // Process enrollments with null safety
+      enrollments.forEach((enrollment) => {
+        if (enrollment.course) {
+          enrolledCourseIds.push(enrollment.course._id);
+          if (enrollment.course.courseTopic) {
+            enrolledTopics.push(enrollment.course.courseTopic);
+          }
+        }
+      });
+
+      // If no valid enrollments, return new user recommendations
+      if (enrolledCourseIds.length === 0) {
         return await this.getNewUserRecommendations(count);
       }
-
-      // Extract course topics and ids from enrollments
-      const enrolledCourseIds = enrollments.map((e) => e.course._id);
-      const enrolledTopics = enrollments
-        .map((e) => e.course.courseTopic)
-        .filter(Boolean);
 
       // Count topics to find most frequent ones
       const topicFrequency = {};
@@ -457,6 +617,7 @@ class RecommendationCourseService extends BaseService {
 
       // Combine user interests with enrolled topics
       const preferredTopics = [...new Set([...sortedTopics, ...userInterests])];
+      console.log(`Preferred topics: ${preferredTopics.join(", ") || "none"}`);
 
       // Find courses with the same topics but not already enrolled
       let recommendedCourses = [];
@@ -469,9 +630,13 @@ class RecommendationCourseService extends BaseService {
         })
           .limit(Math.round(count * 0.8)) // 80% from preferred topics
           .select(
-            "_id name courseTopic price courseThumbnail instructor studentsEnrolled"
+            "_id name courseTopic price courseThumbnail instructor description studentsEnrolled"
           )
           .lean();
+
+        console.log(
+          `Found ${recommendedCourses.length} courses with preferred topics`
+        );
       }
 
       // If we need more recommendations, add some popular courses
@@ -494,15 +659,19 @@ class RecommendationCourseService extends BaseService {
           )
           .lean();
 
+        console.log(
+          `Added ${popularCourses.length} popular courses to recommendations`
+        );
         recommendedCourses = [...recommendedCourses, ...popularCourses];
       }
 
       // Format the response
-      return await this.formatCourseResults(
+      const result = await this.formatCourseResults(
         recommendedCourses,
-        "Personalized recommendations",
-        userId
+        "Personalized recommendations"
       );
+
+      return result;
     } catch (error) {
       console.error("Error generating personalized recommendations:", error);
       return {
@@ -538,7 +707,7 @@ class RecommendationCourseService extends BaseService {
         .sort({ studentsEnrolled: -1 })
         .limit(count)
         .select(
-          "_id name courseTopic price courseThumbnail instructor studentsEnrolled"
+          "_id name courseTopic price courseThumbnail instructor description studentsEnrolled"
         )
         .lean();
 
@@ -583,8 +752,26 @@ class RecommendationCourseService extends BaseService {
       };
     }
   }
+
   async getNewUserRecommendations(count = 8) {
     try {
+      // Try Flask API if available
+      if (this.flaskApiAvailable) {
+        try {
+          const response = await axios.get(`${this.apiBaseUrl}/trending`, {
+            params: { count },
+            timeout: 3000,
+          });
+          return response.data;
+        } catch (apiError) {
+          console.error(
+            "Flask API new user recommendations failed:",
+            apiError.message
+          );
+          this.flaskApiAvailable = false;
+        }
+      }
+
       const Course = mongoose.model("Course");
 
       // For new users, recommend a mix of popular and diverse topics
@@ -637,7 +824,7 @@ class RecommendationCourseService extends BaseService {
       // Format the response
       return await this.formatCourseResults(
         allRecommendations,
-        "Recommended for you"
+        "Recommended for new users"
       );
     } catch (error) {
       console.error("Error getting new user recommendations:", error);
