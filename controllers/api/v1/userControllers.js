@@ -28,5 +28,30 @@ const getUsersMonthly = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Get users monthly successfully", result });
 })
 
+const updateUserRole = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const { role } = req.body;
+    const result = await UserService.updateUserRole(userId, role);
+    res.status(200).json({ message: "User role updated successfully", result });
+})
 
-export { getUserProfile, updateUserProfile, deleteUser, getAllUsers, getUsersMonthly };
+const createUserByAdmin = asyncHandler(async (req, res) => {
+    const { firstName, lastName, email, password, role } = req.body;
+    const result = await UserService.createUserByAdmin({ firstName, lastName, email, password, role });
+    res.status(201).json({ message: "User created successfully", result });
+})
+
+const getUserById = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const result = await UserService.getUserById(userId);
+    res.status(200).json({ message: "Get user successfully", result });
+})
+
+const updateUserByAdmin = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const { firstName, lastName, email, password, role } = req.body;
+    const result = await UserService.updateUserByAdmin(userId, { firstName, lastName, email, password, role });
+    res.status(200).json({ message: "User updated successfully", result });
+});
+
+export { getUserProfile, updateUserProfile, deleteUser, getAllUsers, getUsersMonthly, updateUserRole, createUserByAdmin, getUserById, updateUserByAdmin };

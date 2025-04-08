@@ -8,7 +8,6 @@ const userSchema = mongoose.Schema(
       required: true,
     },
     lastName: {
-      // gg
       type: String,
       required: true,
     },
@@ -29,7 +28,7 @@ const userSchema = mongoose.Schema(
       default: "student",
     },
     profile: {
-      type: String, // URL of the profile picture
+      type: String,
       // default: function () {
       //   return this.googleId ? "" : undefined;
       // },
