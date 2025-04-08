@@ -170,6 +170,7 @@ class EnrolledService extends BaseService {
         return res.status(404).json({ message: "Course not found" });
       }
 
+      // check if user is enrolled in the course
       const enrollment = await EnrolledCourse.findOne({
         course: courseId,
         student: student,
@@ -187,13 +188,34 @@ class EnrolledService extends BaseService {
         course: courseId,
         rating: { $gt: 0 },
       });
-      const averageRating =
-        ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length;
+      const averageRating = ratings.length > 0 ?  ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length : 0;
+       
 
       course.averageTRating = averageRating;
       await course.save();
 
       return { averageRating };
+    } catch (err) {
+      throw new ErrorHandler(500, err.message);
+    }
+  }
+
+  async getRatingCourse(courseId) {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(courseId)) {
+        throw new ErrorHandler(400, "Invalid course ID format");
+      }
+
+      const course = await Course.findById(courseId);
+      if (!course) {
+        throw new ErrorHandler(404, "Course not found");
+      }
+
+      const ratings = course.ratings.map(rating => ({
+        rating: rating.rating,
+      }))
+
+      return {ratings};
     } catch (err) {
       throw new ErrorHandler(500, err.message);
     }

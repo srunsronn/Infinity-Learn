@@ -70,10 +70,23 @@ const submitRatingEnrolledCourse = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Rating submitted successfully", result });
 });
 
+const getRatingCourse = asyncHandler(async (req, res) => {
+  const { courseId } = req.params;
+
+  if (!courseId) {
+    return res.status(400).json({ message: "Course ID is required" });
+  }
+
+  const result = await enrolledCourseService.getRatingCourse(courseId);
+  res.status(200).json({ message: "Retrieved course rating successfully", result });
+});
+
+
 export {
   enrolledCourse,
   getAllEnrolledCourses,
   getCourseEnrollmentsByInstructor,
   getCourseEnrollmentsMonthly,
   submitRatingEnrolledCourse,
+  getRatingCourse,
 };

@@ -28,7 +28,7 @@ import trackLoginRoutes from "./routes/trackLoginRoutes.js";
 import addToCartRoutes from "./routes/addToCartRoutes.js";
 import engagementRoutes from "./routes/engagementRoutes.js";
 import recommendationRoutes from "./routes/recommendCourseRoute.js";
-import sessionConfig from "./update-session.js";
+// import sessionConfig from "./update-session.js";
 import videoProgressRouter from "./routes/videoProgressRouter.js";
 dotenv.config();
 const port = process.env.PORT || 5000;
@@ -118,7 +118,7 @@ app.use(
     },
   })
 );
-app.use(passport.session(sessionConfig));
+// app.use(passport.session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());

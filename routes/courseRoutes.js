@@ -18,7 +18,7 @@ const router = express.Router();
 
 router.get(
   "/",
-  getAllCourses
+   getAllCourses
 );
 router.post(
   "/create-course",
