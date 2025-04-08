@@ -45,27 +45,5 @@ router.get(
   }
 );
 
-// //protect routes
-// router.route("/admin").get(authenticate, verifyRole("admin"), (req, res) => {
-//   res.json({
-//     message: "Admin Page",
-//   });
-// });
-
-// router
-//   .route("/teacher")
-//   .get(authenticate, verifyRole("teacher"), (req, res) => {
-//     res.json({
-//       message: "Teacher Page",
-//     });
-//   });
-
-// router
-//   .route("/student")
-//   .get(authenticate, verifyRole("student"), (req, res) => {
-//     res.json({
-//       message: "Student Page",
-//     });
-//   });
 
 export default router;

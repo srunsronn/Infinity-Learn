@@ -22,7 +22,7 @@ class AuthService extends BaseService {
 
   // register
   async register(data, res) {
-    const { firstName,lastName, email, password } = data;
+    const { firstName, lastName, email, password } = data;
 
     if (!firstName || !lastName || !email || !password) {
       throw new ErrorHandler(400, "Please fill all fields.");
@@ -262,52 +262,94 @@ class AuthService extends BaseService {
   }
 
   async googleLogin(token, res) {
-    const payload = await getProfileInfo(token);
-    const { email, firstName, lastName, sub: googleId, picture } = payload;
+    try {
+      const payload = await getProfileInfo(token);
+      const { email, firstName, lastName, sub: googleId, picture } = payload;
 
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = new User({
-        googleId,
+      console.log("Google profile data:", {
         email,
         firstName,
         lastName,
-        profile: picture,
-        isVerified: true,
+        googleId,
+        picture: picture ? picture.substring(0, 30) + "..." : "none",
       });
-      await user.save();
-    } else {
-      if (user.profile !== picture) {
-        user.profile = picture;
+
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        // Create new user
+        user = new User({
+          googleId,
+          email,
+          firstName: firstName || "Google", // Provide default values
+          lastName: lastName || "User",
+          profile: picture || "",
+          isVerified: true,
+        });
+
+        console.log("Creating new user with data:", {
+          firstName: user.firstName,
+          lastName: user.lastName,
+        });
+
+        await user.save();
+      } else {
+        // Update existing user if needed
+        if (!user.googleId || user.googleId !== googleId) {
+          user.googleId = googleId;
+        }
+
+        if (user.profile !== picture) {
+          user.profile = picture;
+        }
+
+        // Update names if they're missing (for old accounts)
+        if (!user.firstName) user.firstName = firstName || "Google";
+        if (!user.lastName) user.lastName = lastName || "User";
+
         await user.save();
       }
+
+      const { accessToken, refreshToken } = createTokens(user._id);
+
+      // Set cookies
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      await redis.set(
+        `refreshToken:${user._id}`,
+        refreshToken,
+        "EX",
+        60 * 60 * 24 * 30 // 30 days
+      );
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
+      });
+
+      return {
+        accessToken,
+        refreshToken,
+        user: {
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          profile: user.profile,
+        },
+      };
+    } catch (error) {
+      console.error("Error in Google login service:", error);
+      throw error;
     }
-
-    const { accessToken, refreshToken } = createTokens(user._id);
-
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    await redis.set(
-      `refreshToken:${user._id}`,
-      refreshToken,
-      "EX",
-      60 * 60 * 24 * 30 // 30 days
-    );
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 30 * 1000, // 30 days
-    });
-
-    return { accessToken, refreshToken, user };
   }
 }
 
